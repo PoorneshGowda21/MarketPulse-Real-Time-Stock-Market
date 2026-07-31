@@ -15,12 +15,15 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const frontendBuildPath = path.join(__dirname, '../../Frontend/build');
 
+import { rateLimiter } from './middleware/rateLimiter.js';
+
 //Initialise our app by creating express object
 const app = express();
 // To parse JSON we use express.json
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cors());
+app.use(rateLimiter({ windowMs: 60 * 1000, max: 120 }));
 
 import fs from 'fs';
 
