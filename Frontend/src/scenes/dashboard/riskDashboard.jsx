@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Box,
   Typography,
@@ -17,48 +17,166 @@ import PieChartOutlineIcon from "@mui/icons-material/PieChartOutline";
 import WarningAmberIcon from "@mui/icons-material/WarningAmber";
 import Header from "../../components/Header";
 
+// Stock Sector & Beta Reference Table
+const STOCK_META = {
+  AAPL: { sector: "Technology", beta: 1.15, vol: "18.4%" },
+  MSFT: { sector: "Technology", beta: 0.98, vol: "15.2%" },
+  NVDA: { sector: "Technology", beta: 1.72, vol: "32.1%" },
+  TSLA: { sector: "Consumer Cyclical", beta: 1.85, vol: "36.4%" },
+  GOOGL: { sector: "Technology", beta: 1.05, vol: "19.1%" },
+  AMZN: { sector: "Consumer Cyclical", beta: 1.18, vol: "22.0%" },
+  V: { sector: "Financial Services", beta: 0.92, vol: "14.1%" },
+  JPM: { sector: "Financial Services", beta: 1.08, vol: "17.5%" },
+  RELIANCE: { sector: "Energy & Utilities", beta: 0.88, vol: "16.0%" },
+  TCS: { sector: "Technology", beta: 0.78, vol: "12.8%" },
+  HDFCBANK: { sector: "Financial Services", beta: 0.95, vol: "15.0%" },
+  INFY: { sector: "Technology", beta: 0.85, vol: "14.5%" },
+};
+
+const SECTOR_COLORS = {
+  "Technology": "#60a5fa",
+  "Financial Services": "#4cceac",
+  "Consumer Cyclical": "#f59e0b",
+  "Healthcare": "#ec4899",
+  "Energy & Utilities": "#a855f7",
+  "General Equity": "#94a3b8",
+};
+
 const RiskDashboard = () => {
   const theme = useTheme();
   const isDark = theme.palette.mode === "dark";
 
-  // Statistical & Rule-Based Metrics
-  const riskMetrics = {
-    riskScore: 32, // Out of 100 (Lower is safer)
-    riskCategory: "Low to Moderate Risk",
-    diversificationScore: 88, // Out of 100
-    portfolioBeta: 0.94, // Volatility vs S&P 500 benchmark
-    volatility30D: "14.2%", // Standard deviation over 30 days
-    mostVolatileStock: "TSLA (Tesla Inc.) - Beta 1.82",
-    bestRiskReward: "AAPL (Apple Inc.) - Sharpe 2.1",
-    sectorBreakdown: [
-      { sector: "Technology", allocation: 38, color: "#60a5fa" },
-      { sector: "Financial Services", allocation: 24, color: "#4cceac" },
-      { sector: "Consumer Cyclical", allocation: 18, color: "#f59e0b" },
-      { sector: "Healthcare", allocation: 12, color: "#ec4899" },
-      { sector: "Energy & Utilities", allocation: 8, color: "#a855f7" },
-    ],
-    ruleAlerts: [
-      {
+  const user = JSON.parse(localStorage.getItem("user") || "{}");
+  const userId = user?.id || user?._id || "";
+
+  const [holdings, setHoldings] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchPortfolio = async () => {
+      if (!userId) {
+        setLoading(false);
+        return;
+      }
+
+      try {
+        const response = await fetch(`http://localhost:8080/user/${userId}`);
+        if (response.ok) {
+          const pData = await response.json();
+          const temp = [];
+          for (let key in pData) {
+            if (pData[key].name !== undefined && pData[key].name !== null) {
+              const ab = {
+                name: pData[key].name,
+                symbol: pData[key].symbol || pData[key].Symbol || "EQUITY",
+                today: pData[key].today || pData[key].price || 100,
+                invAmount: pData[key].invAmount || 0,
+                currAmount: pData[key].currAmount || 0,
+                quantity: pData[key].quantity || pData[key].shares || 1,
+              };
+              temp.push(ab);
+            }
+          }
+          setHoldings(temp);
+        }
+      } catch (err) {
+        console.log("Risk analysis using fallback state", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchPortfolio();
+  }, [userId]);
+
+  // Compute Dynamic Metrics
+  const totalValue = holdings.reduce((sum, h) => sum + (h.currAmount || (h.today * h.quantity)), 0);
+  const hasHoldings = holdings.length > 0 && totalValue > 0;
+
+  // Sector Breakdown Calculation
+  const sectorMap = {};
+  let totalWeightedBeta = 0;
+  let highestVolStock = { symbol: "None", beta: 0, vol: "0%" };
+
+  if (hasHoldings) {
+    holdings.forEach((item) => {
+      const sym = (item.symbol || "EQUITY").toUpperCase();
+      const meta = STOCK_META[sym] || { sector: "General Equity", beta: 1.0, vol: "15.0%" };
+      const val = item.currAmount || (item.today * item.quantity);
+      const weight = val / totalValue;
+
+      sectorMap[meta.sector] = (sectorMap[meta.sector] || 0) + val;
+      totalWeightedBeta += meta.beta * weight;
+
+      if (meta.beta > highestVolStock.beta) {
+        highestVolStock = { symbol: sym, name: item.name, beta: meta.beta, vol: meta.vol };
+      }
+    });
+  }
+
+  const sectorBreakdown = Object.keys(sectorMap).map((sec) => ({
+    sector: sec,
+    amount: sectorMap[sec],
+    allocation: Math.round((sectorMap[sec] / totalValue) * 100),
+    color: SECTOR_COLORS[sec] || "#4cceac",
+  })).sort((a, b) => b.allocation - a.allocation);
+
+  const maxSectorAlloc = sectorBreakdown.length > 0 ? sectorBreakdown[0].allocation : 0;
+  const numSectors = sectorBreakdown.length;
+
+  // Dynamic Scores
+  const portfolioBeta = hasHoldings ? parseFloat(totalWeightedBeta.toFixed(2)) : 0;
+  const diversificationScore = hasHoldings ? Math.min(100, Math.round(numSectors * 25 - (maxSectorAlloc > 50 ? 20 : 0))) : 0;
+  const riskScore = hasHoldings ? Math.min(100, Math.max(10, Math.round(portfolioBeta * 30 + (maxSectorAlloc > 45 ? 25 : 10)))) : 0;
+
+  let riskCategory = "Zero Active Risk (Empty Portfolio)";
+  if (hasHoldings) {
+    if (riskScore < 35) riskCategory = "Low Risk Portfolio";
+    else if (riskScore < 65) riskCategory = "Moderate Risk Portfolio";
+    else riskCategory = "High Volatility Risk";
+  }
+
+  // Dynamic Rule Alerts
+  const ruleAlerts = [];
+  if (!hasHoldings) {
+    ruleAlerts.push({
+      severity: "info",
+      title: "Portfolio Initialization Required",
+      message: "You currently have no active stock positions in your portfolio. Buy stocks from Stock Listings or Watchlist to view automated risk scores and sector analysis.",
+    });
+  } else {
+    if (maxSectorAlloc <= 45) {
+      ruleAlerts.push({
         severity: "success",
-        title: "Diversification Rule Passed",
-        message: "No single sector exceeds the 45% maximum concentration threshold.",
-      },
-      {
-        severity: "info",
-        title: "Beta Benchmark Check",
-        message: "Portfolio Beta of 0.94 indicates your holdings move slightly less volatile than the broader market.",
-      },
-      {
+        title: "Sector Diversification Rule Passed",
+        message: `Your highest sector concentration is ${maxSectorAlloc}% in ${sectorBreakdown[0].sector}, which is below the 45% risk threshold.`,
+      });
+    } else {
+      ruleAlerts.push({
         severity: "warning",
-        title: "Single Stock Volatility Alert",
-        message: "TSLA accounts for 18% of portfolio equity and has 30D volatility > 28%. Consider rebalancing.",
-      },
-    ],
-  };
+        title: "High Sector Concentration Alert",
+        message: `High risk detected: ${maxSectorAlloc}% of your portfolio is concentrated in ${sectorBreakdown[0].sector}. Consider diversifying into other sectors.`,
+      });
+    }
+
+    ruleAlerts.push({
+      severity: "info",
+      title: "Beta Volatility Benchmark",
+      message: `Your calculated Portfolio Beta is ${portfolioBeta}. Your portfolio is expected to move ${Math.round(portfolioBeta * 100)}% relative to market benchmark index moves.`,
+    });
+
+    if (highestVolStock.beta > 1.4) {
+      ruleAlerts.push({
+        severity: "warning",
+        title: "High Asset Volatility Warning",
+        message: `${highestVolStock.symbol} (${highestVolStock.name}) exhibits elevated volatility with a Beta of ${highestVolStock.beta} (30D Volatility: ${highestVolStock.vol}).`,
+      });
+    }
+  }
 
   return (
     <Box sx={{ p: 3, maxWidth: "1200px", margin: "0 auto" }}>
-      <Header title="Risk & Volatility Analytics" subtitle="Statistical Risk Scoring, Sector Diversification & Benchmark Beta Analysis" />
+      <Header title="Risk & Volatility Analytics" subtitle="Real-Time Risk Scoring, Dynamic Diversification & Portfolio Beta Analysis" />
 
       {/* Overview Stat Cards */}
       <Grid container spacing={3} sx={{ mb: 4 }}>
@@ -81,11 +199,11 @@ const RiskDashboard = () => {
                 <ShieldOutlinedIcon sx={{ color: "#4cceac" }} />
               </Box>
               <Typography variant="h3" sx={{ fontWeight: "900", color: "#4cceac", mb: 1 }}>
-                {riskMetrics.riskScore} <span style={{ fontSize: "16px", color: isDark ? "#a3a3a3" : "#64748b" }}>/ 100</span>
+                {riskScore} <span style={{ fontSize: "16px", color: isDark ? "#a3a3a3" : "#64748b" }}>/ 100</span>
               </Typography>
               <LinearProgress
                 variant="determinate"
-                value={riskMetrics.riskScore}
+                value={riskScore}
                 sx={{
                   height: 8,
                   borderRadius: 4,
@@ -94,7 +212,7 @@ const RiskDashboard = () => {
                   mb: 1,
                 }}
               />
-              <Chip label={riskMetrics.riskCategory} size="small" sx={{ backgroundColor: "rgba(76, 206, 172, 0.15)", color: "#4cceac", fontWeight: "bold" }} />
+              <Chip label={riskCategory} size="small" sx={{ backgroundColor: "rgba(76, 206, 172, 0.15)", color: "#4cceac", fontWeight: "bold" }} />
             </CardContent>
           </Card>
         </Grid>
@@ -118,11 +236,11 @@ const RiskDashboard = () => {
                 <PieChartOutlineIcon sx={{ color: "#60a5fa" }} />
               </Box>
               <Typography variant="h3" sx={{ fontWeight: "900", color: "#60a5fa", mb: 1 }}>
-                {riskMetrics.diversificationScore}%
+                {diversificationScore}%
               </Typography>
               <LinearProgress
                 variant="determinate"
-                value={riskMetrics.diversificationScore}
+                value={diversificationScore}
                 sx={{
                   height: 8,
                   borderRadius: 4,
@@ -132,7 +250,7 @@ const RiskDashboard = () => {
                 }}
               />
               <Typography variant="caption" sx={{ color: isDark ? "#a3a3a3" : "#64748b", fontWeight: 600 }}>
-                Well balanced across 5 sectors
+                {hasHoldings ? `Spread across ${numSectors} sectors` : "No active holdings"}
               </Typography>
             </CardContent>
           </Card>
@@ -157,10 +275,10 @@ const RiskDashboard = () => {
                 <ShowChartIcon sx={{ color: "#f59e0b" }} />
               </Box>
               <Typography variant="h3" sx={{ fontWeight: "900", color: "#ffffff", mb: 1 }}>
-                {riskMetrics.portfolioBeta}
+                {portfolioBeta.toFixed(2)}
               </Typography>
               <Typography variant="body2" sx={{ color: isDark ? "#a3a3a3" : "#64748b" }}>
-                30D Volatility: <span style={{ color: "#f59e0b", fontWeight: "bold" }}>{riskMetrics.volatility30D}</span>
+                Holdings Count: <span style={{ color: "#f59e0b", fontWeight: "bold" }}>{holdings.length} Assets</span>
               </Typography>
             </CardContent>
           </Card>
@@ -185,10 +303,10 @@ const RiskDashboard = () => {
                 <WarningAmberIcon sx={{ color: "#f87171" }} />
               </Box>
               <Typography variant="body1" sx={{ fontWeight: "bold", color: "#f87171", mb: 1 }}>
-                {riskMetrics.mostVolatileStock}
+                {hasHoldings ? `${highestVolStock.symbol} (β ${highestVolStock.beta})` : "No Positions"}
               </Typography>
               <Typography variant="caption" sx={{ color: isDark ? "#a3a3a3" : "#64748b" }}>
-                Best Risk/Reward: {riskMetrics.bestRiskReward}
+                {hasHoldings ? `30D Volatility: ${highestVolStock.vol}` : "Buy stocks to analyze asset risk"}
               </Typography>
             </CardContent>
           </Card>
@@ -213,28 +331,39 @@ const RiskDashboard = () => {
               Sector Concentration Breakdown
             </Typography>
 
-            {riskMetrics.sectorBreakdown.map((item, index) => (
-              <Box sx={{ mb: 2.5 }} key={index}>
-                <Box sx={{ display: "flex", justifyContent: "space-between", mb: 0.8 }}>
-                  <Typography variant="body2" sx={{ color: isDark ? "#ffffff" : "#0f172a", fontWeight: "bold" }}>
-                    {item.sector}
-                  </Typography>
-                  <Typography variant="body2" sx={{ color: item.color, fontWeight: "bold" }}>
-                    {item.allocation}%
-                  </Typography>
-                </Box>
-                <LinearProgress
-                  variant="determinate"
-                  value={item.allocation}
-                  sx={{
-                    height: 10,
-                    borderRadius: 5,
-                    backgroundColor: isDark ? "#141b2d" : "#e2e8f0",
-                    "& .MuiLinearProgress-bar": { backgroundColor: item.color },
-                  }}
-                />
+            {!hasHoldings ? (
+              <Box sx={{ py: 6, textAlign: "center" }}>
+                <Typography variant="body1" sx={{ color: isDark ? "#a3a3a3" : "#64748b", fontWeight: 600 }}>
+                  📊 No active stock holdings in portfolio.
+                </Typography>
+                <Typography variant="body2" sx={{ color: isDark ? "#64748b" : "#94a3b8", mt: 1 }}>
+                  Buy shares from Stock Listings to view your live sector concentration.
+                </Typography>
               </Box>
-            ))}
+            ) : (
+              sectorBreakdown.map((item, index) => (
+                <Box sx={{ mb: 2.5 }} key={index}>
+                  <Box sx={{ display: "flex", justifyContent: "space-between", mb: 0.8 }}>
+                    <Typography variant="body2" sx={{ color: isDark ? "#ffffff" : "#0f172a", fontWeight: "bold" }}>
+                      {item.sector}
+                    </Typography>
+                    <Typography variant="body2" sx={{ color: item.color, fontWeight: "bold" }}>
+                      {item.allocation}% (${item.amount.toFixed(2)})
+                    </Typography>
+                  </Box>
+                  <LinearProgress
+                    variant="determinate"
+                    value={item.allocation}
+                    sx={{
+                      height: 10,
+                      borderRadius: 5,
+                      backgroundColor: isDark ? "#141b2d" : "#e2e8f0",
+                      "& .MuiLinearProgress-bar": { backgroundColor: item.color },
+                    }}
+                  />
+                </Box>
+              ))
+            )}
           </Card>
         </Grid>
 
@@ -251,11 +380,11 @@ const RiskDashboard = () => {
             }}
           >
             <Typography variant="h5" sx={{ color: isDark ? "#ffffff" : "#0f172a", fontWeight: "bold", mb: 3 }}>
-              Rule-Based Risk Guards
+              Automated Risk Rule Evaluation
             </Typography>
 
             <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
-              {riskMetrics.ruleAlerts.map((alert, index) => (
+              {ruleAlerts.map((alert, index) => (
                 <Alert
                   key={index}
                   severity={alert.severity}

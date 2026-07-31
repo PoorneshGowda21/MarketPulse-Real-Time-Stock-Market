@@ -1,25 +1,22 @@
 {
-  "name": "final-project-jams",
+  "name": "marketpulse-realtime-stock-market",
   "version": "1.0.0",
-  "description": "final-project-jams created by GitHub Classroom",
-  "main": "index.js",
+  "description": "MarketPulse Real-Time Stock Market Portfolio Manager & Trading Engine",
+  "main": "Backend/server.js",
   "scripts": {
     "dev": "concurrently \"npm run backend\" \"npm run frontend\"",
-    "start": "concurrently \"npm run backend\" \"npm run frontend\"",
+    "start": "node Backend/server.js",
     "backend": "npm start --prefix Backend",
     "frontend": "npm start --prefix Frontend",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "build": "cd Frontend && npm install && npm run build",
+    "vercel-build": "cd Frontend && npm install && npm run build"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/neu-mis-info6150-fall-2022/final-project-jams.git"
+    "url": "git+https://github.com/PoorneshGowda21/MarketPulse-Real-Time-Stock-Market.git"
   },
-  "author": "",
+  "author": "Poornesh Gowda",
   "license": "ISC",
-  "bugs": {
-    "url": "https://github.com/neu-mis-info6150-fall-2022/final-project-jams/issues"
-  },
-  "homepage": "https://github.com/neu-mis-info6150-fall-2022/final-project-jams#readme",
   "devDependencies": {
     "concurrently": "^10.0.4"
   }
