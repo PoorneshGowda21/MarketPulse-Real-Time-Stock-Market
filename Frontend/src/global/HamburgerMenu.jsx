@@ -13,6 +13,9 @@ import MenuOutlinedIcon from "@mui/icons-material/MenuOutlined";
 import ReceiptLongOutlinedIcon from '@mui/icons-material/ReceiptLongOutlined';
 import NewspaperOutlinedIcon from '@mui/icons-material/NewspaperOutlined';
 import CandlestickChartOutlinedIcon from '@mui/icons-material/CandlestickChartOutlined';
+import ShieldOutlinedIcon from '@mui/icons-material/ShieldOutlined';
+import NotificationsActiveIcon from '@mui/icons-material/NotificationsActive';
+import AdminPanelSettingsOutlinedIcon from '@mui/icons-material/AdminPanelSettingsOutlined';
 
 const HamburgerMenu = () => {
   const theme = useTheme();
@@ -187,12 +190,48 @@ const HamburgerMenu = () => {
                 </Typography>
               </MenuItem>
 
+              <MenuItem
+                title="Risk Analytics"
+                routerLink={<Link to="/risk"></Link>}
+                icon={<ShieldOutlinedIcon style={{ color: "#e0e0e0" }} />}
+                selected={selected}
+                setSelected={setSelected}
+              >
+                <Typography sx={{ color: "#e0e0e0", fontWeight: 500 }}>
+                  Risk Analytics
+                </Typography>
+              </MenuItem>
+
               <Typography
                 variant="h6"
                 sx={{ color: "#4cceac", fontWeight: "bold", m: "15px 0 5px 20px" }}
               >
                 Pages
               </Typography>
+
+              <MenuItem
+                title="Price Alerts"
+                routerLink={<Link to="/alerts"></Link>}
+                icon={<NotificationsActiveIcon style={{ color: "#e0e0e0" }} />}
+                selected={selected}
+                setSelected={setSelected}
+              >
+                <Typography sx={{ color: "#e0e0e0", fontWeight: 500 }}>
+                  Price Alerts
+                </Typography>
+              </MenuItem>
+
+              <MenuItem
+                title="Admin Control"
+                routerLink={<Link to="/admin"></Link>}
+                icon={<AdminPanelSettingsOutlinedIcon style={{ color: "#e0e0e0" }} />}
+                selected={selected}
+                setSelected={setSelected}
+              >
+                <Typography sx={{ color: "#e0e0e0", fontWeight: 500 }}>
+                  Admin Control
+                </Typography>
+              </MenuItem>
 
               <MenuItem
                 title="Profile"

@@ -20,6 +20,10 @@ import Orders from "./scenes/dashboard/tradeHistory.js";
 import Testimonials from "./global/Testimonials.jsx";
 import Profile from "./scenes/dashboard/profile.jsx";
 
+import RiskDashboard from "./scenes/dashboard/riskDashboard.jsx";
+import PriceAlerts from "./scenes/dashboard/priceAlerts.jsx";
+import AdminDashboard from "./scenes/dashboard/adminDashboard.jsx";
+
 const AppLayout = ({ children }) => (
   <div className="app" style={{ display: 'flex', minHeight: '100vh', width: '100%', position: 'relative' }}>
     <HamburgerMenu />
@@ -43,7 +47,7 @@ function App() {
           <Route path="/login" element={<><Login /><Copyright /></>} />
           <Route path="/register" element={<><Register /><Copyright /></>} />
 
-          {/* Authenticated Dashboard Routes with Clean Sticky Sidebar Layout */}
+          {/* Authenticated Dashboard Routes */}
           <Route path="/home" element={<AppLayout><Dashboard /></AppLayout>} />
           <Route path="/watchlist" element={<AppLayout><WatchList /></AppLayout>} />
           <Route path="/details" element={<AppLayout><Details /></AppLayout>} />
@@ -55,6 +59,9 @@ function App() {
           <Route path="/orders" element={<AppLayout><Orders /></AppLayout>} />
           <Route path="/testimonials" element={<AppLayout><Testimonials /></AppLayout>} />
           <Route path="/profile" element={<AppLayout><Profile /></AppLayout>} />
+          <Route path="/risk" element={<AppLayout><RiskDashboard /></AppLayout>} />
+          <Route path="/alerts" element={<AppLayout><PriceAlerts /></AppLayout>} />
+          <Route path="/admin" element={<AppLayout><AdminDashboard /></AppLayout>} />
         </Routes>
       </ThemeProvider>
     </ColorModeContext.Provider>

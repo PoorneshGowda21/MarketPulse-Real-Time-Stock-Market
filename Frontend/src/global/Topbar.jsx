@@ -1,4 +1,4 @@
-import { Typography, Box, IconButton, useTheme } from "@mui/material";
+import { Typography, Box, IconButton, useTheme, Select, MenuItem } from "@mui/material";
 import { useContext, useState, useEffect } from "react";
 import { ColorModeContext, tokens } from "./../theme";
 import LightModeOutlinedIcon from "@mui/icons-material/LightModeOutlined";
@@ -8,6 +8,7 @@ import TrendingUpIcon from '@mui/icons-material/TrendingUp';
 import { useLogout } from './../hooks/useLogout';
 import { useNavigate } from "react-router-dom";
 import LogoutIcon from '@mui/icons-material/Logout';
+import AttachMoneyIcon from '@mui/icons-material/AttachMoney';
 
 const Topbar = () => {
     const theme = useTheme();
@@ -19,6 +20,33 @@ const Topbar = () => {
     const initialBal = user?.balanceSaved ?? user?.balance ?? 500000;
     const [userBal, setUserBal] = useState(initialBal);
     let navigate = useNavigate();
+
+    const [currency, setCurrency] = useState(() => localStorage.getItem("selectedCurrency") || "USD");
+
+    const handleCurrencyChange = (e) => {
+      const newCurr = e.target.value;
+      setCurrency(newCurr);
+      localStorage.setItem("selectedCurrency", newCurr);
+      window.dispatchEvent(new Event("currencyChange"));
+    };
+
+    const getSymbol = (curr) => {
+      switch (curr) {
+        case "INR": return "₹";
+        case "EUR": return "€";
+        case "GBP": return "£";
+        default: return "$";
+      }
+    };
+
+    const getMultiplier = (curr) => {
+      switch (curr) {
+        case "INR": return 83.5;
+        case "EUR": return 0.92;
+        case "GBP": return 0.78;
+        default: return 1.0;
+      }
+    };
 
     useEffect(() => {
       if (!userId) return;
@@ -40,17 +68,16 @@ const Topbar = () => {
       navigate("../");
     }
 
+    const convertedBal = (userBal * getMultiplier(currency)).toFixed(2);
+
     return (
       <Box sx={{ backgroundColor: "#0b1329", borderBottom: "1px solid #1e293b" }}>
-        {/* Main Top Header Bar (Nexus Core Style) */}
+        {/* Main Top Header Bar */}
         <Box 
           display="flex" 
           justifyContent="space-between" 
           alignItems="center" 
-          sx={{ 
-            px: 3, 
-            py: 1.8, 
-          }}
+          sx={{ px: 3, py: 1.8 }}
         >
           {/* Logo Badge + Brand Title */}
           <Box display="flex" alignItems="center" gap={1.8}>
@@ -86,6 +113,28 @@ const Topbar = () => {
 
           {/* Right Side Action Controls */}
           <Box display="flex" alignItems="center" gap={1.5}>
+            {/* Multi-Currency Dropdown Switcher */}
+            <Select
+              value={currency}
+              onChange={handleCurrencyChange}
+              size="small"
+              sx={{
+                color: "#4cceac",
+                fontWeight: "bold",
+                backgroundColor: "#1e293b",
+                borderRadius: "8px",
+                border: "1px solid #4cceac",
+                height: "40px",
+                "& .MuiSvgIcon-root": { color: "#4cceac" },
+                "& fieldset": { border: "none" },
+              }}
+            >
+              <MenuItem value="USD">USD ($)</MenuItem>
+              <MenuItem value="INR">INR (₹)</MenuItem>
+              <MenuItem value="EUR">EUR (€)</MenuItem>
+              <MenuItem value="GBP">GBP (£)</MenuItem>
+            </Select>
+
             {/* Wallet Balance Badge */}
             <IconButton 
               sx={{ 
@@ -99,7 +148,7 @@ const Topbar = () => {
             >
               <AccountBalanceWalletOutlinedIcon sx={{ mr: 1, fontSize: "20px" }} />
               <Typography variant="subtitle2" sx={{ fontWeight: "bold", color: "#60a5fa" }}>
-                ${userBal !== undefined && userBal !== null ? (typeof userBal === 'number' ? userBal.toFixed(2) : userBal) : '500000.00'}
+                {getSymbol(currency)} {convertedBal}
               </Typography>
             </IconButton>
 
@@ -130,23 +179,16 @@ const Topbar = () => {
                 backgroundColor: "rgba(239, 68, 68, 0.1)",
                 border: "1px solid #ef4444",
                 borderRadius: "8px",
-                px: 1.8,
-                py: 0.8,
-                "&:hover": {
-                  backgroundColor: "rgba(239, 68, 68, 0.25)",
-                }
+                p: 1
               }}
-              title="Logout"
+              title="Logout Session"
             >
-              <LogoutIcon sx={{ mr: 0.8, fontSize: "18px" }} />
-              <Typography variant="subtitle2" sx={{ fontWeight: "bold", color: "#ef4444" }}>
-                Logout
-              </Typography>
+              <LogoutIcon />
             </IconButton>
           </Box>
         </Box>
       </Box>
     );
-}
+};
 
 export default Topbar;

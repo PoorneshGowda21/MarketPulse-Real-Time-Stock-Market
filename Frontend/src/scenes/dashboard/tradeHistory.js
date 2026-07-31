@@ -220,43 +220,105 @@ const Portfolio = () => {
       <Box m="20px">
         <Header title="Trade History" subtitle="Your Order History Deatils" />
 
+        <Box sx={{ display: "flex", justifyContent: "flex-end", mb: 2 }}>
+          <Button
+            variant="contained"
+            onClick={() => {
+              if (!rows || rows.length === 0) return;
+              const headers = ["Company Name", "Symbol", "Price", "Quantity", "Trade Type"];
+              const csvRows = rows.map((r) => [
+                `"${r.name || ''}"`,
+                `"${r.symbol || ''}"`,
+                r.today || r.price || 0,
+                r.shares || r.quantity || 0,
+                `"${r.tradeType || 'BUY'}"`,
+              ].join(","));
+              const csvContent = "data:text/csv;charset=utf-8," + [headers.join(","), ...csvRows].join("\n");
+              const encodedUri = encodeURI(csvContent);
+              const link = document.createElement("a");
+              link.setAttribute("href", encodedUri);
+              link.setAttribute("download", `MarketPulse_Trade_History_${Date.now()}.csv`);
+              document.body.appendChild(link);
+              link.click();
+              document.body.removeChild(link);
+            }}
+            sx={{
+              backgroundColor: "#4cceac",
+              color: "#141b2d",
+              fontWeight: "bold",
+              px: 3,
+              py: 1,
+              borderRadius: "8px",
+              boxShadow: "0 0 12px rgba(76, 206, 172, 0.4)",
+              "&:hover": { backgroundColor: "#3da58a" }
+            }}
+          >
+            EXPORT CSV
+          </Button>
+        </Box>
+
         <Box
-          m="40px 0 0 0"
-          height="75vh"
+          m="20px 0 0 0"
+          height="70vh"
           sx={{
+            backgroundColor: theme.palette.mode === "dark" ? "#1F2A40" : "#ffffff",
+            borderRadius: "16px",
+            border: theme.palette.mode === "dark" ? "1px solid rgba(76, 206, 172, 0.35)" : "1px solid #cbd5e1",
+            boxShadow: theme.palette.mode === "dark" ? "0 8px 32px rgba(0, 0, 0, 0.5)" : "0 4px 20px rgba(0, 0, 0, 0.08)",
+            p: 2,
             "& .MuiDataGrid-root": {
               border: "none",
-              color: "#e0e0e0 !important",
+              color: theme.palette.mode === "dark" ? "#e0e0e0 !important" : "#1e293b !important",
             },
             "& .MuiDataGrid-cell": {
-              borderBottom: "1px solid #2d3748",
-              color: "#e0e0e0 !important",
+              borderBottom: theme.palette.mode === "dark" ? "1px solid rgba(255, 255, 255, 0.08)" : "1px solid #e2e8f0",
+              color: theme.palette.mode === "dark" ? "#e0e0e0 !important" : "#1e293b !important",
+              fontSize: "13.5px",
             },
             "& .name-column--cell": {
-              color: "#4cceac !important",
-            },
-            "& .MuiDataGrid-columnHeaders": {
-              backgroundColor: "#1F2A40 !important",
-              borderBottom: "none",
-              color: "#4cceac !important",
-            },
-            "& .MuiDataGrid-columnHeaderTitle": {
-              color: "#4cceac !important",
+              color: theme.palette.mode === "dark" ? "#4cceac !important" : "#0d9488 !important",
               fontWeight: "bold",
             },
+            "& .MuiDataGrid-columnHeaders": {
+              backgroundColor: theme.palette.mode === "dark" ? "#141b2d !important" : "#f8fafc !important",
+              borderBottom: theme.palette.mode === "dark" ? "2px solid #4cceac" : "2px solid #0d9488",
+              borderRadius: "10px 10px 0 0",
+            },
+            "& .MuiDataGrid-columnHeaderTitle": {
+              color: theme.palette.mode === "dark" ? "#4cceac !important" : "#0d9488 !important",
+              fontWeight: "bold",
+              fontSize: "14px",
+            },
             "& .MuiDataGrid-virtualScroller": {
-              backgroundColor: "#141b2d !important",
+              backgroundColor: theme.palette.mode === "dark" ? "#141b2d !important" : "#ffffff !important",
             },
             "& .MuiDataGrid-footerContainer": {
-              borderTop: "none",
-              backgroundColor: "#1F2A40 !important",
-              color: "#e0e0e0 !important",
+              borderTop: theme.palette.mode === "dark" ? "1px solid rgba(76, 206, 172, 0.25)" : "1px solid #e2e8f0",
+              backgroundColor: theme.palette.mode === "dark" ? "#141b2d !important" : "#f8fafc !important",
+              color: theme.palette.mode === "dark" ? "#e0e0e0 !important" : "#1e293b !important",
             },
-            "& .MuiTablePagination-root": {
-              color: "#e0e0e0 !important",
-            },
-            "& .MuiDataGrid-toolbarContainer .MuiButton-text": {
-              color: "#4cceac !important",
+            "& .MuiDataGrid-toolbarContainer": {
+              mb: 1,
+              display: "flex",
+              justifyContent: "space-between",
+              "& .MuiButton-text": {
+                color: theme.palette.mode === "dark" ? "#4cceac !important" : "#0d9488 !important",
+                fontWeight: "bold",
+              },
+              "& .MuiDataGrid-toolbarQuickFilter": {
+                backgroundColor: theme.palette.mode === "dark" ? "#141b2d !important" : "#f8fafc !important",
+                borderRadius: "8px !important",
+                border: theme.palette.mode === "dark" ? "2px solid #4cceac !important" : "2px solid #0d9488 !important",
+                padding: "4px 12px !important",
+                display: "inline-flex !important",
+                "& .MuiInputBase-root": {
+                  color: theme.palette.mode === "dark" ? "#ffffff !important" : "#0f172a !important",
+                  fontWeight: "bold !important",
+                },
+                "& .MuiSvgIcon-root": {
+                  color: theme.palette.mode === "dark" ? "#4cceac !important" : "#0d9488 !important",
+                },
+              },
             },
           }}
         >
@@ -265,6 +327,12 @@ const Portfolio = () => {
               rows={rows}
               columns={columns}
               components={{ Toolbar: GridToolbar }}
+              componentsProps={{
+                toolbar: {
+                  showQuickFilter: true,
+                  quickFilterProps: { debounceMs: 300 },
+                },
+              }}
             />
           }
         </Box>
