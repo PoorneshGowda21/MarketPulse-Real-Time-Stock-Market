@@ -1,12 +1,11 @@
-## Stocks Portfolio Manager React App
+# MarketPulse - Real-Time Stock Market Portfolio Manager & Trading Engine
 
-Web app Link - https://stocktradeportfolio.netlify.app/
+> Built by Poornesh Gowda | Deployed on Vercel
 
-## Overview:
+## Overview
 
-- A Stocks Portfolio management web application which enables the user to view stock listings, IPO listings, add stocks to watchlist, buy/sell stocks, display the portfolio, stock transaction history and showcase the stock news.
+MarketPulse is a full-stack financial analytics and virtual trading platform built on the MERN stack with real-time market data, interactive TradingView charts, portfolio risk analysis, target price alerts, multi-currency conversion, and admin infrastructure monitoring.
 
-- Server Deployed on Heroku and Client deployed on Netlify
 
 ## Architecture & Technologies
 
