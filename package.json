@@ -8,8 +8,8 @@
     "start": "node Backend/server.js",
     "backend": "npm start --prefix Backend",
     "frontend": "npm start --prefix Frontend",
-    "build": "cd Frontend && npm install && npm run build",
-    "vercel-build": "cd Frontend && npm install && npm run build"
+    "build": "cd Frontend && npm install --legacy-peer-deps && npm run build",
+    "vercel-build": "cd Frontend && npm install --legacy-peer-deps && npm run build"
   },
   "repository": {
     "type": "git",
