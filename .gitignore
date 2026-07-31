@@ -1,0 +1,17 @@
+# Dependencies
+node_modules/
+Frontend/node_modules/
+Backend/node_modules/
+
+# Production build
+Frontend/build/
+dist/
+
+# Environment files
+.env
+Backend/.env
+Frontend/.env
+
+# Misc
+.DS_Store
+*.log
