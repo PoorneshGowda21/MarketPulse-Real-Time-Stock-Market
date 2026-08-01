@@ -148,7 +148,7 @@ export default function SellStock() {
 
                             <Button
                                 type="submit"
-                                disabled={loading}
+                                disabled={isLoading}
                                 fullWidth
                                 variant="contained"
                                 sx={{ mt: 3, mb: 2 }}
@@ -161,9 +161,9 @@ export default function SellStock() {
 
                                 </Grid>
                                 <Grid item>
-                                    <Link href="/watchlist" variant="body2">
+                                    <a href="/watchlist" style={{ color: "#4cceac", textDecoration: "none", fontSize: "14px" }}>
                                         {"Remove"}
-                                    </Link>
+                                    </a>
                                 </Grid>
                             </Grid>
                             {/* <Copyright sx={{ mt: 5 }} /> */}

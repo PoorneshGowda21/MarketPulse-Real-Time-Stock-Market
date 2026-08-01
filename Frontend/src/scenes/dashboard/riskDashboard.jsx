@@ -79,8 +79,6 @@ const RiskDashboard = () => {
         }
       } catch (err) {
         console.log("Risk analysis using fallback state", err);
-      } finally {
-        setLoading(false);
       }
     };
 
