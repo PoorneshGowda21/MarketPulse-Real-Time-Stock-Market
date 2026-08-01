@@ -28,7 +28,9 @@ const Register = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     const isLoggedIn = await signup(firstName, lastName, email, password);
-    isLoggedIn ? navigate('../home') : navigate("../register");
+    if (isLoggedIn) {
+      navigate('/home');
+    }
   };
 
   return (

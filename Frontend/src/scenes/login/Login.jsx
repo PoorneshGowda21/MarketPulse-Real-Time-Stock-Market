@@ -26,7 +26,9 @@ const Login = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     const isLoggedIn = await login(email, password);
-    isLoggedIn ? navigate('../home') : navigate('../login');
+    if (isLoggedIn) {
+      navigate('/home');
+    }
   };
 
   return (
