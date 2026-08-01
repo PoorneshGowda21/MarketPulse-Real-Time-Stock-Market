@@ -1,7 +1,7 @@
 {
   "version": 2,
   "installCommand": "npm install --legacy-peer-deps",
-  "buildCommand": "cd Frontend && npm install --legacy-peer-deps && CI=false react-scripts build",
+  "buildCommand": "cd Frontend && npm install --legacy-peer-deps && npm run build",
   "outputDirectory": "Frontend/build",
   "rewrites": [
     {
