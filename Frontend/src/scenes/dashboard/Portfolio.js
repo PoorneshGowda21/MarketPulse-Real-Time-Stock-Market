@@ -45,21 +45,78 @@ const Portfolio = () => {
   // console.log(url);
 
   const fetchData = async () => {
-    if (!url) return;
     let abc = [];
     const temp = [];
     let totalAmount = 0;
     let totalProfit = 0;
     let totalCurrAmount = 0;
 
+    const loadFromLocalStorage = async () => {
+      const portKey = `user_portfolio_${userId}`;
+      const localHoldings = JSON.parse(localStorage.getItem(portKey) || "[]");
+      if (localHoldings.length === 0) return;
+
+      let lTotAmt = 0;
+      let lTotProf = 0;
+      let lTotCurr = 0;
+      const lTemp = [];
+
+      for (let item of localHoldings) {
+        let livePrice = item.price || 150;
+        try {
+          const res = await axios.get(`https://finnhub.io/api/v1/quote?symbol=${item.symbol}&token=ce80b8aad3i4pjr4v2ggce80b8aad3i4pjr4v2h0`);
+          if (res.data && res.data.c) livePrice = res.data.c;
+        } catch (e) {
+          console.log(e);
+        }
+
+        const currAmount = item.shares * livePrice;
+        const invAmount = item.shares * item.price;
+        const profit = currAmount - invAmount;
+
+        lTotAmt += invAmount;
+        lTotProf += profit;
+        lTotCurr += currAmount;
+
+        lTemp.push({
+          id: item._id || item.symbol,
+          name: item.name || item.symbol,
+          symbol: item.symbol,
+          today: livePrice,
+          buyPrice: item.price,
+          shares: item.shares,
+          currAmount,
+          invAmount,
+          profit,
+        });
+      }
+
+      setInvAmt(lTotAmt);
+      setTProfit(lTotProf);
+      setCurrAmt(lTotCurr);
+      setRows(lTemp);
+    };
+
+    if (!url) {
+      loadFromLocalStorage();
+      return;
+    }
+
     try {
       const resp = await fetch(url);
-      if (!resp.ok) return;
+      if (!resp.ok) {
+        await loadFromLocalStorage();
+        return;
+      }
       const response = await resp.json();
-      if (!Array.isArray(response) || response.length === 0) return;
+      if (!Array.isArray(response) || response.length === 0) {
+        await loadFromLocalStorage();
+        return;
+      }
       response.forEach((d) => abc.push(d));
     } catch (err) {
       console.log("Portfolio fetch error:", err);
+      await loadFromLocalStorage();
       return;
     }
 

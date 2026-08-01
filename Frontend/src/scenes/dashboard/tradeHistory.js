@@ -7,7 +7,7 @@ import Header from "../../components/Headers";
 const Portfolio = () => {
   const user = JSON.parse(localStorage.getItem("user") || "{}");
   const userId = user?.id || user?._id || "";
-  const [rows, setRows] = useState([]);   // ← starts empty — no fake defaults
+  const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(true);
   const theme = useTheme();
 
@@ -19,6 +19,29 @@ const Portfolio = () => {
         return;
       }
 
+      // Helper: Load recorded orders from localStorage
+      const loadFromLocalStorage = () => {
+        const ordersKey = `user_orders_${userId}`;
+        const localOrders = JSON.parse(localStorage.getItem(ordersKey) || "[]");
+        if (localOrders.length === 0) {
+          setLoading(false);
+          return;
+        }
+        const list = localOrders.map((item, index) => ({
+          id: item._id || item.id || `trade_${index}`,
+          _id: item._id || item.id || `trade_${index}`,
+          name: item.name || item.symbol || "Stock Trade",
+          symbol: item.symbol || "STK",
+          tradeType: item.tradeType || "BUY",
+          price: item.price || 0,
+          shares: item.shares || 0,
+          invAmount: item.invAmount || (item.price || 0) * (item.shares || 0),
+          date: item.date ? item.date.split("T")[0] : new Date().toISOString().split("T")[0],
+        }));
+        setRows(list);
+        setLoading(false);
+      };
+
       const API_BASE = process.env.REACT_APP_API_URL ||
         (window.location.origin.includes('localhost') ? 'http://localhost:8080' : '');
       const url = `${API_BASE}/trade/${userId}`;
@@ -26,12 +49,12 @@ const Portfolio = () => {
       try {
         const response = await fetch(url);
         if (!response.ok) {
-          setLoading(false);
+          loadFromLocalStorage();
           return;
         }
         const data = await response.json();
         if (!Array.isArray(data) || data.length === 0) {
-          setLoading(false);
+          loadFromLocalStorage();
           return;
         }
 
@@ -49,6 +72,7 @@ const Portfolio = () => {
         setRows(list);
       } catch (err) {
         console.log("Trade history fetch error:", err);
+        loadFromLocalStorage();
       } finally {
         setLoading(false);
       }
@@ -136,7 +160,6 @@ const Portfolio = () => {
       <Header title="Orders & Trade History" subtitle="Executed Stock Transactions Log" />
 
       {!loading && rows.length === 0 ? (
-        // Empty state — user hasn't placed any orders yet
         <Box
           mt="40px"
           height="60vh"
@@ -148,10 +171,10 @@ const Portfolio = () => {
         >
           <ReceiptLongIcon sx={{ fontSize: 64, color: "#4cceac", opacity: 0.5, mb: 2 }} />
           <Typography variant="h5" sx={{ color: theme.palette.mode === "dark" ? "#a3a3a3" : "#64748b", mb: 1 }}>
-            No orders yet
+            No orders executed yet
           </Typography>
           <Typography variant="body2" sx={{ color: theme.palette.mode === "dark" ? "#666" : "#94a3b8" }}>
-            Your executed buy and sell orders will appear here after you trade.
+            When you buy or sell stocks from your Watchlist, your executed orders will appear here.
           </Typography>
         </Box>
       ) : (
