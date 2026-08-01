@@ -110,11 +110,81 @@ const Dashboard = () => {
     //   align: "left",
     // }
     {
+      field: "BuyAction",
+      headerName: "Buy",
+      headerAlign: "center",
+      align: "center",
+      flex: 0.6,
+      sortable: false,
+      renderCell: (params) => (
+        <Button
+          variant="contained"
+          size="small"
+          onClick={(e) => {
+            e.stopPropagation();
+            history("/buyStock", {
+              state: {
+                symbol: params.row.symbol,
+                name: params.row.description || params.row.symbol,
+                today: 185.50,
+              },
+            });
+          }}
+          sx={{
+            backgroundColor: "#4cceac",
+            color: "#141b2d",
+            fontWeight: "bold",
+            fontSize: "12px",
+            py: 0.4,
+            px: 1.5,
+            borderRadius: "6px",
+            "&:hover": { backgroundColor: "#3da58a" },
+          }}
+        >
+          BUY
+        </Button>
+      ),
+    },
+    {
+      field: "SellAction",
+      headerName: "Sell",
+      headerAlign: "center",
+      align: "center",
+      flex: 0.6,
+      sortable: false,
+      renderCell: (params) => (
+        <Button
+          variant="outlined"
+          size="small"
+          color="error"
+          onClick={(e) => {
+            e.stopPropagation();
+            history("/sellStock", {
+              state: {
+                symbol: params.row.symbol,
+                name: params.row.description || params.row.symbol,
+                today: 185.50,
+              },
+            });
+          }}
+          sx={{
+            fontWeight: "bold",
+            fontSize: "12px",
+            py: 0.4,
+            px: 1.5,
+            borderRadius: "6px",
+          }}
+        >
+          SELL
+        </Button>
+      ),
+    },
+    {
         field: "Details",
         headerAlign: "center",
-        headerName: "Add to Watchlkist",
-        flex:1,
-        align:"center",
+        headerName: "Add to Watchlist",
+        flex: 0.8,
+        align: "center",
         sortable: false,
         renderCell: (params) => {
             const OnAdd = async (e) => {
@@ -135,11 +205,13 @@ const Dashboard = () => {
 
                 // === Save to localStorage watchlist (always works offline) ===
                 const storageKey = `watchlist_${userId}`;
-                const existing = JSON.parse(localStorage.getItem(storageKey) || "[]");
+                const existingKey = "user_watchlist_" + userId;
+                const existing = JSON.parse(localStorage.getItem(existingKey) || localStorage.getItem(storageKey) || "[]");
                 const alreadyExists = existing.find(s => s.symbol === symbol);
                 if (!alreadyExists) {
                     existing.push(stockEntry);
                     localStorage.setItem(storageKey, JSON.stringify(existing));
+                    localStorage.setItem(existingKey, JSON.stringify(existing));
                 }
 
                 // === Also try to POST to backend (non-blocking) ===
