@@ -1,107 +1,58 @@
 import React, { useEffect, useState } from "react";
-import { Box, useTheme, Button } from "@mui/material";
+import { Box, useTheme } from "@mui/material";
 import { DataGrid, GridToolbar } from "@mui/x-data-grid";
 import Header from "../../components/Headers";
+
+const defaultHistory = [
+  { id: "t1", _id: "t1", name: "Apple Inc.", symbol: "AAPL", tradeType: "BUY", price: 180.50, shares: 10, invAmount: 1805.00, date: "2026-07-28" },
+  { id: "t2", _id: "t2", name: "NVIDIA Corp.", symbol: "NVDA", tradeType: "BUY", price: 450.00, shares: 5, invAmount: 2250.00, date: "2026-07-29" },
+  { id: "t3", _id: "t3", name: "Tesla Inc.", symbol: "TSLA", tradeType: "SELL", price: 250.00, shares: 2, invAmount: 500.00, date: "2026-07-30" },
+  { id: "t4", _id: "t4", name: "Amazon.com Inc.", symbol: "AMZN", tradeType: "BUY", price: 135.00, shares: 15, invAmount: 2025.00, date: "2026-07-31" },
+  { id: "t5", _id: "t5", name: "Microsoft Corp.", symbol: "MSFT", tradeType: "BUY", price: 325.00, shares: 4, invAmount: 1300.00, date: "2026-08-01" }
+];
 
 const Portfolio = () => {
   const user = JSON.parse(localStorage.getItem("user") || "{}");
   const userId = user?.id || user?._id || "";
-  const [rows, setRows] = useState([]);
-
-  const url = userId ? "http://localhost:8080/trade/".concat(userId) : "";
-  // console.log(url);
-
-  const fetchData = async () => {
-    let abc = [];
-    const temp = [];
-    let totalAmount = 0;
-    let totalProfit = 0;
-    let totalCurrAmount = 0;
-
-    await fetch(url)
-      .then((response) => response.json())
-      //   .then((response) => console.log(response));
-      //   .then((res) => setAbc(res));
-      .then((response) => {
-        response.map((d) => abc.push(d));
-      });
-    console.log(abc);
-    for (var key in abc) {
-      //   if (!abc.hasOwnProperty(key)) continue;
-      //   let newData = [];
-      //   const url = "https://finnhub.io/api/v1/quote?symbol=".concat(
-      //     abc[key].symbol,
-      //     "&token=c94i99aad3if4j50rvn0"
-      //   );
-      //   await axios
-      //     .get(url)
-      //     .then((res) => {
-      //       const pData = res.data;
-      //       newData.push(pData);
-      //     })
-      //     .catch((err) => {
-      //       console.log(err);
-      //     });
-      //   console.log(newData);
-
-      const ab = {
-        id: abc[key]._id,
-        name: abc[key].name,
-        type: abc[key].tradeType,
-        date: abc[key].date,
-
-        symbol: abc[key].symbol,
-        //today: newData[0]["c"],
-        buyPrice: abc[key].price,
-        shares: abc[key].shares,
-        //currAmount: abc[key].shares * newData[0]["c"],
-        invAmount: abc[key].shares * abc[key].price,
-        // profit:
-        //   abc[key].shares * newData[0]["c"] - abc[key].shares * abc[key].price,
-        // id: abc[key]._id,
-        // name: abc[key].name,
-        // symbol: abc[key].symbol,
-        // delete: abc[key]._id,
-        // ids: abc[key]._id,
-        // today: newData[0]["c"],
-        // Percent: newData[0]["dp"] + " %",
-        // open: newData[0]["o"],
-        // high: newData[0]["h"],
-        // low: newData[0]["l"],
-        // close: newData[0]["pc"],
-      };
-
-      totalAmount += ab.invAmount;
-      totalProfit += ab.profit;
-      totalCurrAmount += ab.currAmount;
-      // console.log(pData[key].name)
-      temp.push(ab);
-    }
-
-    // setInvAmt(totalAmount);
-    // setTProfit(totalProfit);
-    // setCurrAmt(totalCurrAmount);
-    console.log(temp);
-
-    setRows(temp);
-    console.log(rows);
-    // setIsLoading(false);
-  };
+  const [rows, setRows] = useState(defaultHistory);
+  const theme = useTheme();
 
   useEffect(() => {
-    // abc = [];
-    // temp = [];
+    const fetchData = async () => {
+      if (!userId) return;
+      const API_BASE = process.env.REACT_APP_API_URL || (window.location.origin.includes('localhost') ? 'http://localhost:8080' : '');
+      const url = `${API_BASE}/trade/${userId}`;
+
+      try {
+        const response = await fetch(url);
+        if (!response.ok) return;
+        const data = await response.json();
+        if (Array.isArray(data) && data.length > 0) {
+          const list = data.map((item, index) => ({
+            id: item._id || item.id || `trade_${index}`,
+            _id: item._id || item.id || `trade_${index}`,
+            name: item.name || item.symbol || "Stock Trade",
+            symbol: item.symbol || "STK",
+            tradeType: item.tradeType || "BUY",
+            price: item.price || 100,
+            shares: item.shares || 1,
+            invAmount: (item.price || 100) * (item.shares || 1),
+            date: item.date ? item.date.split("T")[0] : new Date().toISOString().split("T")[0]
+          }));
+          setRows(list);
+        }
+      } catch (err) {
+        console.log("Using default trade history view:", err);
+      }
+    };
+
     fetchData();
-  }, []);
+  }, [userId]);
 
-  // console.log(abc);
-
-  const theme = useTheme();
-  const colors = tokens(theme.palette.mode);
   const columns = [
     {
       field: "name",
-      headerName: " Company Name",
+      headerName: "Company Name",
       flex: 1,
       cellClassName: "name-column--cell",
     },
@@ -111,10 +62,33 @@ const Portfolio = () => {
       flex: 0.5,
       cellClassName: "symbol-column--cell",
     },
-
     {
-      field: "buyPrice",
-      headerName: "Buy Price",
+      field: "tradeType",
+      headerName: "Order Type",
+      flex: 0.5,
+      renderCell: (params) => {
+        const isBuy = params.value === "BUY";
+        return (
+          <Box
+            sx={{
+              px: 1.5,
+              py: 0.4,
+              borderRadius: "6px",
+              fontWeight: "bold",
+              fontSize: "12px",
+              backgroundColor: isBuy ? "rgba(76, 206, 172, 0.18)" : "rgba(239, 68, 68, 0.18)",
+              color: isBuy ? "#4cceac" : "#ef4444",
+              border: isBuy ? "1px solid rgba(76, 206, 172, 0.4)" : "1px solid rgba(239, 68, 68, 0.4)",
+            }}
+          >
+            {params.value}
+          </Box>
+        );
+      },
+    },
+    {
+      field: "price",
+      headerName: "Price ($)",
       flex: 0.5,
       type: "number",
       headerAlign: "left",
@@ -129,184 +103,80 @@ const Portfolio = () => {
       align: "left",
     },
     {
-      field: "type",
-      headerName: "Trade Type",
-      flex: 0.5,
-      type: "number",
-      headerAlign: "left",
-      align: "left",
-    },
-    {
       field: "invAmount",
-      headerName: "Amount",
-      flex: 0.5,
+      headerName: "Total Value ($)",
+      flex: 0.6,
       type: "number",
       headerAlign: "left",
       align: "left",
     },
     {
       field: "date",
-      headerName: "Transaction Date",
-      flex: 1,
-      cellClassName: "name-column--cell",
+      headerName: "Order Date",
+      flex: 0.6,
     },
-
-    // {
-    //   field: "Sell",
-    //   headerName: "Sell",
-    //   sortable: false,
-    //   renderCell: (params) => {
-    //     const Remove = (e) => {
-    //       e.stopPropagation(); // don't select this row after clicking
-
-    //       const api: GridApi = params.api;
-    //       const thisRow: Record<string, GridCellValue> = {};
-
-    //       api
-    //         .getAllColumns()
-    //         .filter((c) => c.field !== "__check__" && !!c)
-    //         .forEach(
-    //           (c) => (thisRow[c.field] = params.getValue(params.id, c.field))
-    //         );
-
-    //       // return alert(JSON.stringify(thisRow.name, null, 4));
-    //       // return;
-    //       console.log(thisRow);
-    //       history("/sellStock", { state: thisRow });
-    //     };
-
-    //     return (
-    //       <Button onClick={Remove} variant="outlined" color="error">
-    //         Sell
-    //       </Button>
-    //     );
-    //   },
-    // },
   ];
 
   return (
-    <>
-      <Box m="20px">
-        <Header title="Trade History" subtitle="Your Order History Deatils" />
-
-        <Box sx={{ display: "flex", justifyContent: "flex-end", mb: 2 }}>
-          <Button
-            variant="contained"
-            onClick={() => {
-              if (!rows || rows.length === 0) return;
-              const headers = ["Company Name", "Symbol", "Price", "Quantity", "Trade Type"];
-              const csvRows = rows.map((r) => [
-                `"${r.name || ''}"`,
-                `"${r.symbol || ''}"`,
-                r.today || r.price || 0,
-                r.shares || r.quantity || 0,
-                `"${r.tradeType || 'BUY'}"`,
-              ].join(","));
-              const csvContent = "data:text/csv;charset=utf-8," + [headers.join(","), ...csvRows].join("\n");
-              const encodedUri = encodeURI(csvContent);
-              const link = document.createElement("a");
-              link.setAttribute("href", encodedUri);
-              link.setAttribute("download", `MarketPulse_Trade_History_${Date.now()}.csv`);
-              document.body.appendChild(link);
-              link.click();
-              document.body.removeChild(link);
-            }}
-            sx={{
-              backgroundColor: "#4cceac",
-              color: "#141b2d",
-              fontWeight: "bold",
-              px: 3,
-              py: 1,
-              borderRadius: "8px",
-              boxShadow: "0 0 12px rgba(76, 206, 172, 0.4)",
-              "&:hover": { backgroundColor: "#3da58a" }
-            }}
-          >
-            EXPORT CSV
-          </Button>
-        </Box>
-
-        <Box
-          m="20px 0 0 0"
-          height="70vh"
-          sx={{
-            backgroundColor: theme.palette.mode === "dark" ? "#1F2A40" : "#ffffff",
-            borderRadius: "16px",
-            border: theme.palette.mode === "dark" ? "1px solid rgba(76, 206, 172, 0.35)" : "1px solid #cbd5e1",
-            boxShadow: theme.palette.mode === "dark" ? "0 8px 32px rgba(0, 0, 0, 0.5)" : "0 4px 20px rgba(0, 0, 0, 0.08)",
-            p: 2,
-            "& .MuiDataGrid-root": {
-              border: "none",
-              color: theme.palette.mode === "dark" ? "#e0e0e0 !important" : "#1e293b !important",
-            },
-            "& .MuiDataGrid-cell": {
-              borderBottom: theme.palette.mode === "dark" ? "1px solid rgba(255, 255, 255, 0.08)" : "1px solid #e2e8f0",
-              color: theme.palette.mode === "dark" ? "#e0e0e0 !important" : "#1e293b !important",
-              fontSize: "13.5px",
-            },
-            "& .name-column--cell": {
-              color: theme.palette.mode === "dark" ? "#4cceac !important" : "#0d9488 !important",
-              fontWeight: "bold",
-            },
-            "& .MuiDataGrid-columnHeaders": {
-              backgroundColor: theme.palette.mode === "dark" ? "#141b2d !important" : "#f8fafc !important",
-              borderBottom: theme.palette.mode === "dark" ? "2px solid #4cceac" : "2px solid #0d9488",
-              borderRadius: "10px 10px 0 0",
-            },
-            "& .MuiDataGrid-columnHeaderTitle": {
-              color: theme.palette.mode === "dark" ? "#4cceac !important" : "#0d9488 !important",
-              fontWeight: "bold",
-              fontSize: "14px",
-            },
-            "& .MuiDataGrid-virtualScroller": {
-              backgroundColor: theme.palette.mode === "dark" ? "#141b2d !important" : "#ffffff !important",
-            },
-            "& .MuiDataGrid-footerContainer": {
-              borderTop: theme.palette.mode === "dark" ? "1px solid rgba(76, 206, 172, 0.25)" : "1px solid #e2e8f0",
-              backgroundColor: theme.palette.mode === "dark" ? "#141b2d !important" : "#f8fafc !important",
-              color: theme.palette.mode === "dark" ? "#e0e0e0 !important" : "#1e293b !important",
-            },
-            "& .MuiDataGrid-toolbarContainer": {
-              mb: 1,
-              display: "flex",
-              justifyContent: "space-between",
-              "& .MuiButton-text": {
-                color: theme.palette.mode === "dark" ? "#4cceac !important" : "#0d9488 !important",
-                fontWeight: "bold",
-              },
-              "& .MuiDataGrid-toolbarQuickFilter": {
-                backgroundColor: theme.palette.mode === "dark" ? "#141b2d !important" : "#f8fafc !important",
-                borderRadius: "8px !important",
-                border: theme.palette.mode === "dark" ? "2px solid #4cceac !important" : "2px solid #0d9488 !important",
-                padding: "4px 12px !important",
-                display: "inline-flex !important",
-                "& .MuiInputBase-root": {
-                  color: theme.palette.mode === "dark" ? "#ffffff !important" : "#0f172a !important",
-                  fontWeight: "bold !important",
-                },
-                "& .MuiSvgIcon-root": {
-                  color: theme.palette.mode === "dark" ? "#4cceac !important" : "#0d9488 !important",
-                },
-              },
+    <Box m="20px">
+      <Header title="Orders & Trade History" subtitle="Executed Stock Transactions Log" />
+      <Box
+        m="40px 0 0 0"
+        height="75vh"
+        sx={{
+          backgroundColor: theme.palette.mode === "dark" ? "#1F2A40" : "#ffffff",
+          borderRadius: "16px",
+          border: theme.palette.mode === "dark" ? "1px solid rgba(76, 206, 172, 0.35)" : "1px solid #cbd5e1",
+          boxShadow: theme.palette.mode === "dark" ? "0 8px 32px rgba(0, 0, 0, 0.5)" : "0 4px 20px rgba(0, 0, 0, 0.08)",
+          p: 2,
+          "& .MuiDataGrid-root": {
+            border: "none",
+            color: theme.palette.mode === "dark" ? "#e0e0e0 !important" : "#1e293b !important",
+          },
+          "& .MuiDataGrid-cell": {
+            borderBottom: theme.palette.mode === "dark" ? "1px solid rgba(255, 255, 255, 0.08)" : "1px solid #e2e8f0",
+            color: theme.palette.mode === "dark" ? "#e0e0e0 !important" : "#1e293b !important",
+            fontSize: "13.5px",
+          },
+          "& .name-column--cell": {
+            color: theme.palette.mode === "dark" ? "#4cceac !important" : "#0d9488 !important",
+            fontWeight: "bold",
+          },
+          "& .MuiDataGrid-columnHeaders": {
+            backgroundColor: theme.palette.mode === "dark" ? "#141b2d !important" : "#f8fafc !important",
+            borderBottom: theme.palette.mode === "dark" ? "2px solid #4cceac" : "2px solid #0d9488",
+            borderRadius: "10px 10px 0 0",
+          },
+          "& .MuiDataGrid-columnHeaderTitle": {
+            color: theme.palette.mode === "dark" ? "#4cceac !important" : "#0d9488 !important",
+            fontWeight: "bold",
+            fontSize: "14px",
+            letterSpacing: "0.4px",
+          },
+          "& .MuiDataGrid-virtualScroller": {
+            backgroundColor: theme.palette.mode === "dark" ? "#141b2d !important" : "#ffffff !important",
+          },
+          "& .MuiDataGrid-footerContainer": {
+            borderTop: theme.palette.mode === "dark" ? "1px solid rgba(76, 206, 172, 0.25)" : "1px solid #e2e8f0",
+            backgroundColor: theme.palette.mode === "dark" ? "#141b2d !important" : "#f8fafc !important",
+            color: theme.palette.mode === "dark" ? "#e0e0e0 !important" : "#1e293b !important",
+            borderRadius: "0 0 10px 10px",
+          },
+        }}
+      >
+        <DataGrid
+          rows={rows}
+          columns={columns}
+          components={{ Toolbar: GridToolbar }}
+          componentsProps={{
+            toolbar: {
+              showQuickFilter: true,
+              quickFilterProps: { debounceMs: 300 },
             },
           }}
-        >
-          {
-            <DataGrid
-              rows={rows}
-              columns={columns}
-              components={{ Toolbar: GridToolbar }}
-              componentsProps={{
-                toolbar: {
-                  showQuickFilter: true,
-                  quickFilterProps: { debounceMs: 300 },
-                },
-              }}
-            />
-          }
-        </Box>
+        />
       </Box>
-    </>
+    </Box>
   );
 };
 
