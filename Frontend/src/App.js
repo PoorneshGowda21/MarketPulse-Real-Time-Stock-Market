@@ -1,6 +1,6 @@
 import { CssBaseline, ThemeProvider } from "@mui/material";
 import { ColorModeContext, useMode } from "./theme";
-import { Routes, Route } from "react-router-dom";
+import { Routes, Route, Navigate } from "react-router-dom";
 import Topbar from "./global/Topbar";
 import HamburgerMenu from "./global/HamburgerMenu";
 import Dashboard from "./scenes/dashboard";
@@ -12,17 +12,16 @@ import BuyStock from "./scenes/dashboard/buyStock";
 import SellStock from "./scenes/dashboard/sellStock";
 import LandingPage from "./global/LandingPage";
 import Newz from "./scenes/dashboard/news";
-
 import IPO from "./scenes/dashboard/ipo";
 import Copyright from "./global/Copyright";
 import Portfolio from "./scenes/dashboard/Portfolio";
 import Orders from "./scenes/dashboard/tradeHistory.js";
 import Testimonials from "./global/Testimonials.jsx";
 import Profile from "./scenes/dashboard/profile.jsx";
-
 import RiskDashboard from "./scenes/dashboard/riskDashboard.jsx";
 import PriceAlerts from "./scenes/dashboard/priceAlerts.jsx";
 import AdminDashboard from "./scenes/dashboard/adminDashboard.jsx";
+import ProtectedRoute from "./components/ProtectedRoute";
 
 const AppLayout = ({ children }) => (
   <div className="app" style={{ display: 'flex', minHeight: '100vh', width: '100%', position: 'relative' }}>
@@ -35,6 +34,13 @@ const AppLayout = ({ children }) => (
   </div>
 );
 
+// Helper: wrap route content with ProtectedRoute + AppLayout
+const AuthRoute = ({ element }) => (
+  <ProtectedRoute>
+    <AppLayout>{element}</AppLayout>
+  </ProtectedRoute>
+);
+
 function App() {
   const [theme, colorMode] = useMode();
 
@@ -43,25 +49,30 @@ function App() {
       <ThemeProvider theme={theme}>
         <CssBaseline />
         <Routes>
+          {/* Public routes */}
           <Route path="/" element={<LandingPage />} />
           <Route path="/login" element={<><Login /><Copyright /></>} />
           <Route path="/register" element={<><Register /><Copyright /></>} />
 
-          {/* Authenticated Dashboard Routes */}
-          <Route path="/home" element={<AppLayout><Dashboard /></AppLayout>} />
-          <Route path="/watchlist" element={<AppLayout><WatchList /></AppLayout>} />
-          <Route path="/details" element={<AppLayout><Details /></AppLayout>} />
-          <Route path="/news" element={<AppLayout><Newz /></AppLayout>} />
-          <Route path="/ipo" element={<AppLayout><IPO /></AppLayout>} />
-          <Route path="/buyStock" element={<AppLayout><BuyStock /></AppLayout>} />
-          <Route path="/sellStock" element={<AppLayout><SellStock /></AppLayout>} />
-          <Route path="/portfolio" element={<AppLayout><Portfolio /></AppLayout>} />
-          <Route path="/orders" element={<AppLayout><Orders /></AppLayout>} />
-          <Route path="/testimonials" element={<AppLayout><Testimonials /></AppLayout>} />
-          <Route path="/profile" element={<AppLayout><Profile /></AppLayout>} />
-          <Route path="/risk" element={<AppLayout><RiskDashboard /></AppLayout>} />
-          <Route path="/alerts" element={<AppLayout><PriceAlerts /></AppLayout>} />
-          <Route path="/admin" element={<AppLayout><AdminDashboard /></AppLayout>} />
+          {/* Protected dashboard routes — redirect to /login if not authenticated */}
+          <Route path="/home"        element={<AuthRoute element={<Dashboard />} />} />
+          <Route path="/watchlist"   element={<AuthRoute element={<WatchList />} />} />
+          <Route path="/details"     element={<AuthRoute element={<Details />} />} />
+          <Route path="/news"        element={<AuthRoute element={<Newz />} />} />
+          <Route path="/ipo"         element={<AuthRoute element={<IPO />} />} />
+          <Route path="/buyStock"    element={<AuthRoute element={<BuyStock />} />} />
+          <Route path="/sellStock"   element={<AuthRoute element={<SellStock />} />} />
+          <Route path="/portfolio"   element={<AuthRoute element={<Portfolio />} />} />
+          <Route path="/orders"      element={<AuthRoute element={<Orders />} />} />
+          <Route path="/tradeHistory" element={<AuthRoute element={<Orders />} />} />
+          <Route path="/testimonials" element={<AuthRoute element={<Testimonials />} />} />
+          <Route path="/profile"     element={<AuthRoute element={<Profile />} />} />
+          <Route path="/risk"        element={<AuthRoute element={<RiskDashboard />} />} />
+          <Route path="/alerts"      element={<AuthRoute element={<PriceAlerts />} />} />
+          <Route path="/admin"       element={<AuthRoute element={<AdminDashboard />} />} />
+
+          {/* Catch-all — redirect unknown routes to landing page */}
+          <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </ThemeProvider>
     </ColorModeContext.Provider>
