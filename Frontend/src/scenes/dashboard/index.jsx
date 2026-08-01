@@ -117,79 +117,45 @@ const Dashboard = () => {
         align:"center",
         sortable: false,
         renderCell: (params) => {
+            const OnAdd = async (e) => {
+                e.stopPropagation();
 
-            const  OnAdd = async (e) => {
+                // Use params.row directly — no deprecated getValue/GridApi needed
+                const row = params.row;
+                const userId = user?.id || user?._id || "";
+                const symbol = row.symbol;
+                const name = row.description || row.name || symbol;
 
-
-                e.stopPropagation(); // don't select this row after clicking
-  
-                    const api: GridApi = params.api;
-                    const thisRow: Record<string, GridCellValue> = {};
-          
-                    api
-                      .getAllColumns()
-                      .filter((c) => c.field !== "__check__" && !!c)
-                      .forEach(
-                        (c) => (thisRow[c.field] = params.getValue(params.id, c.field))
-                      );
-                    console.log(thisRow);
-                    
-
-
-
-
-                const userId = user?.id || user?._id || "guest";
-                const item = {
-                  userId: userId,
-                  symbol: thisRow.symbol,
-                  name: thisRow.description,
-                };
-            
-                const url = "http://localhost:8080/temp/";
-            
-                await axios
-                  .post(url, {
-                    userId: userId,
-                    symbol: thisRow.symbol,
-                    name: thisRow.description,
-                  })
-                  .then((response) => {
-                    console.log(response);
-                  })
-                  .catch((err) => {
-                    console.log(err);
-                  });
-            
-
-                  history("/watchlist", { state: thisRow });
+                if (!userId || !symbol) {
+                    alert("Please log in to add stocks to your watchlist.");
                     return;
-                // const response = await fetch(url, {
-                //   method: "POST",
-                //   headers: { "Content-Type": "application/json" },
-            
-                //   body: JSON.stringify(item),
-                // });
-                // const json = await response.json();
-                //history("../watchlist");
-              }
-        //   const Details = (e) => {
-        //     e.stopPropagation(); // don't select this row after clicking
-  
-        //     const api: GridApi = params.api;
-        //     const thisRow: Record<string, GridCellValue> = {};
-  
-        //     api
-        //       .getAllColumns()
-        //       .filter((c) => c.field !== "__check__" && !!c)
-        //       .forEach(
-        //         (c) => (thisRow[c.field] = params.getValue(params.id, c.field))
-        //       );
-        //     console.log(thisRow);
-        //     history("/watchlist", { state: thisRow });
-        //     return;
-        //   };
-  
-          return <AddCircleOutlineIcon onClick={OnAdd}></AddCircleOutlineIcon>;
+                }
+
+                const stockEntry = { userId, symbol, name };
+
+                // === Save to localStorage watchlist (always works offline) ===
+                const storageKey = `watchlist_${userId}`;
+                const existing = JSON.parse(localStorage.getItem(storageKey) || "[]");
+                const alreadyExists = existing.find(s => s.symbol === symbol);
+                if (!alreadyExists) {
+                    existing.push(stockEntry);
+                    localStorage.setItem(storageKey, JSON.stringify(existing));
+                }
+
+                // === Also try to POST to backend (non-blocking) ===
+                const API_BASE = process.env.REACT_APP_API_URL ||
+                    (window.location.origin.includes('localhost') ? 'http://localhost:8080' : '');
+                try {
+                    await axios.post(`${API_BASE}/temp/`, stockEntry);
+                } catch (err) {
+                    console.log("Backend unavailable, saved to localStorage:", err);
+                }
+
+                // Navigate to watchlist
+                history("/watchlist");
+            };
+
+          return <AddCircleOutlineIcon onClick={OnAdd} sx={{ cursor: "pointer", color: "#4cceac", "&:hover": { color: "#3da58a" } }} />;
         },
       }]
 

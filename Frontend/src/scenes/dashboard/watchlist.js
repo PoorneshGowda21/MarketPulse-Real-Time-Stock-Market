@@ -24,6 +24,31 @@ const Watchlist = () => {
         return;
       }
 
+      // Helper: load from localStorage fallback
+      const loadFromLocalStorage = async () => {
+        const storageKey = `watchlist_${userId}`;
+        const localItems = JSON.parse(localStorage.getItem(storageKey) || "[]");
+        if (localItems.length === 0) {
+          setLoading(false);
+          return;
+        }
+        const list = localItems.map((item, i) => ({
+          id: item._id || item.id || item.symbol || `local_${i}`,
+          _id: item._id || item.id || item.symbol,
+          name: item.name || item.symbol,
+          symbol: item.symbol,
+          delete: item._id || item.id || item.symbol,
+          today: 0,
+          Percent: "—",
+          open: 0,
+          high: 0,
+          low: 0,
+          close: 0,
+        }));
+        setRows(list);
+        setLoading(false);
+      };
+
       const API_BASE = process.env.REACT_APP_API_URL ||
         (window.location.origin.includes('localhost') ? 'http://localhost:8080' : '');
       const url = `${API_BASE}/temp/${userId}`;
@@ -31,12 +56,14 @@ const Watchlist = () => {
       try {
         const response = await fetch(url);
         if (!response.ok) {
-          setLoading(false);
+          await loadFromLocalStorage();
           return;
         }
         const data = await response.json();
+
+        // If backend returns empty, fall back to localStorage
         if (!Array.isArray(data) || data.length === 0) {
-          setLoading(false);
+          await loadFromLocalStorage();
           return;
         }
 
@@ -58,7 +85,7 @@ const Watchlist = () => {
             name: item.name || item.symbol,
             symbol: item.symbol,
             delete: item._id || item.id,
-            today: quote ? quote.c : item.price || 0,
+            today: quote ? quote.c : 0,
             Percent: quote ? (quote.dp ? quote.dp.toFixed(2) + " %" : "0.00 %") : "—",
             open: quote ? quote.o : 0,
             high: quote ? quote.h : 0,
@@ -69,6 +96,7 @@ const Watchlist = () => {
         setRows(list);
       } catch (err) {
         console.log("Watchlist fetch error:", err);
+        await loadFromLocalStorage();
       } finally {
         setLoading(false);
       }
@@ -77,9 +105,21 @@ const Watchlist = () => {
     fetchData();
   }, [userId]);
 
+
   const handleDelete = async (rowId) => {
+    // Get the symbol of the row being deleted
+    const deletedRow = rows.find((r) => r.id === rowId || r._id === rowId);
+
     // Remove from UI immediately
     setRows((prev) => prev.filter((r) => r.id !== rowId && r._id !== rowId));
+
+    // Remove from localStorage watchlist
+    if (deletedRow && userId) {
+      const storageKey = `watchlist_${userId}`;
+      const existing = JSON.parse(localStorage.getItem(storageKey) || "[]");
+      const updated = existing.filter(s => s.symbol !== deletedRow.symbol);
+      localStorage.setItem(storageKey, JSON.stringify(updated));
+    }
 
     // Also try to delete from backend
     if (!userId) return;
@@ -91,6 +131,7 @@ const Watchlist = () => {
       console.log("Delete from backend failed:", e);
     }
   };
+
 
   const columns = [
     {
