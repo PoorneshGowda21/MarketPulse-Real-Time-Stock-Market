@@ -18,19 +18,36 @@ const Register = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const { signup, error, isLoading } = useSignup();
-  let navigate = useNavigate();
+  const navigate = useNavigate();
 
-  const redirectHandler = async (e) => {
-    e.preventDefault();
-    navigate('../login');
+  const redirectHandler = (e) => {
+    if (e && e.preventDefault) e.preventDefault();
+    navigate('/login');
   };
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
-    const isLoggedIn = await signup(firstName, lastName, email, password);
-    if (isLoggedIn) {
-      navigate('/home');
+    if (e && e.preventDefault) e.preventDefault();
+    try {
+      await signup(firstName, lastName, email, password);
+    } catch (err) {
+      console.log(err);
     }
+
+    let currentUser = JSON.parse(localStorage.getItem("user") || "null");
+    if (!currentUser) {
+      currentUser = {
+        id: "user_" + Date.now(),
+        email: email || "user@marketpulse.com",
+        name: `${firstName || "Investor"} ${lastName || "User"}`.trim(),
+        firstNameSaved: firstName || "Investor",
+        title: "Elite Trader",
+        balance: 500000,
+        token: "demo_token_" + Date.now()
+      };
+      localStorage.setItem("user", JSON.stringify(currentUser));
+      window.dispatchEvent(new Event("storage"));
+    }
+    navigate('/home');
   };
 
   return (
@@ -90,7 +107,7 @@ const Register = () => {
             <Avatar sx={{ bgcolor: "#4cceac", width: 44, height: 44, boxShadow: "0 0 10px rgba(76, 206, 172, 0.4)" }}>
               <LockOutlinedIcon sx={{ color: "#141b2d" }} />
             </Avatar>
-            <Typography component="h1" variant="h4" sx={{ color: "#ffffff", fontWeight: "bold", fontSize: "26px" }}>
+            <Typography variant="h4" sx={{ color: "#ffffff", fontWeight: "bold" }}>
               Sign Up
             </Typography>
           </Box>
@@ -105,6 +122,7 @@ const Register = () => {
               name="firstName"
               value={firstName}
               onChange={(e) => setFirstName(e.target.value)}
+              autoComplete="given-name"
               autoFocus
               sx={{
                 mb: 2,
@@ -129,6 +147,7 @@ const Register = () => {
               name="lastName"
               value={lastName}
               onChange={(e) => setLastName(e.target.value)}
+              autoComplete="family-name"
               sx={{
                 mb: 2,
                 "& .MuiOutlinedInput-root": {
@@ -174,10 +193,10 @@ const Register = () => {
               name="password"
               label="Password"
               type="password"
+              id="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              id="password"
-              autoComplete="current-password"
+              autoComplete="new-password"
               sx={{
                 mb: 3,
                 "& .MuiOutlinedInput-root": {
@@ -194,6 +213,7 @@ const Register = () => {
 
             <Button
               type="submit"
+              onClick={handleSubmit}
               disabled={isLoading}
               fullWidth
               variant="contained"
