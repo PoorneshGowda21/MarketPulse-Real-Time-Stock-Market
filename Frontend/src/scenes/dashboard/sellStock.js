@@ -4,44 +4,23 @@ import Avatar from '@mui/material/Avatar';
 import Button from '@mui/material/Button';
 import CssBaseline from '@mui/material/CssBaseline';
 import TextField from '@mui/material/TextField';
-import Link from '@mui/material/Link';
 import Paper from '@mui/material/Paper';
 import Box from '@mui/material/Box';
 import Grid from '@mui/material/Grid';
 import LockOutlinedIcon from '@mui/icons-material/LockOutlined';
 import Typography from '@mui/material/Typography';
 import { createTheme, ThemeProvider } from '@mui/material/styles';
-import  Alert  from '@mui/material/Alert';
-
-import InputLabel from '@mui/material/InputLabel';
-import MenuItem from '@mui/material/MenuItem';
-// import FormControl from '@mui/material/FormControl';
-import Select, { SelectChangeEvent } from '@mui/material/Select';
-
-// import { useAuth } from "../contexts/AuthContext";
-import { useNavigate } from 'react-router-dom';
-// import { doc,  updateDoc, arrayUnion, Timestamp } from "firebase/firestore";
-import { useLocation } from 'react-router-dom';
-// import { auth, db } from '../Firebase';
-// import Copyright from '../components/Copyright';
+import Alert from '@mui/material/Alert';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useTransaction } from '../../hooks/transaction';
-import { useBalance} from '../../hooks/useBalance';
 
 const theme = createTheme();
 
 export default function SellStock() {
-    // const nameRef = useRef();
-    // const quantityRef = useRef();
-    // const valueRef = useRef();
-    // const { currentUser, signup } = useAuth();
-    
-    const [loading, setLoading] = useState(false);
     const history = useNavigate();
     const location = useLocation();
     const [tradeStatus, setTradeStatus] = useState(true);
-    // const {balance, errorBal, bal} = useBalance();
-
-    const {transaction, error, isLoading} = useTransaction();
+    const { transaction, error, isLoading } = useTransaction();
 
     const user = JSON.parse(localStorage.getItem("user") || "{}");
     console.log(user);

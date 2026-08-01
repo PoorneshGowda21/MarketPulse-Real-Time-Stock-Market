@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import {
   Box,
   Typography,
@@ -17,7 +17,6 @@ import SaveIcon from "@mui/icons-material/Save";
 import PersonIcon from "@mui/icons-material/Person";
 import BadgeIcon from "@mui/icons-material/Badge";
 import AccountBalanceIcon from "@mui/icons-material/AccountBalance";
-import ContactPhoneIcon from "@mui/icons-material/ContactPhone";
 import Header from "../../components/Header";
 
 const Profile = () => {

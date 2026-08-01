@@ -50,12 +50,10 @@ const RiskDashboard = () => {
   const userId = user?.id || user?._id || "";
 
   const [holdings, setHoldings] = useState([]);
-  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchPortfolio = async () => {
       if (!userId) {
-        setLoading(false);
         return;
       }
 

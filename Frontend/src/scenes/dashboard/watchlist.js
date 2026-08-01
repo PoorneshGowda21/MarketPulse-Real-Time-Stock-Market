@@ -1,33 +1,15 @@
-import { Box, Typography, useTheme, Button } from "@mui/material";
+import React, { useEffect, useState } from "react";
+import { Box, useTheme, Button } from "@mui/material";
 import { DataGrid, GridToolbar } from "@mui/x-data-grid";
-import { tokens } from "../../theme";
-import Icon from "@mui/material/Icon";
-import { mockDataTeam } from "../../data/mockData";
-import AdminPanelSettingsOutlinedIcon from "@mui/icons-material/AdminPanelSettingsOutlined";
-import LockOpenOutlinedIcon from "@mui/icons-material/LockOpenOutlined";
-import SecurityOutlinedIcon from "@mui/icons-material/SecurityOutlined";
 import DeleteIcon from "@mui/icons-material/Delete";
 import Header from "../../components/Headers";
-// import { abc } from "../../mockData";
-import { useEffect, useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
-import axios from "axios";
-// import { useAuthContext } from "../../hooks/useAuthContext.jsx";
-import AddCircleOutlineIcon from "@mui/icons-material/AddCircleOutline";
-import { CleaningServices } from "@mui/icons-material";
-import React from "react";
 
 const Watchlist = () => {
-  // const { user } = useAuthContext();
   const user = JSON.parse(localStorage.getItem("user") || "{}");
   const userId = user?.id || user?._id || "";
-  // console.log(user);
   const history = useNavigate();
-  // const [abc, setAbc] = useState([]);
   const [rows, setRows] = useState([]);
-
-  // const [rows: GridRowsProp, setRows] = React.useState([]);
-  const [isLoading, setIsLoading] = useState(true);
 
   const url = userId ? "http://localhost:8080/temp/".concat(userId) : "";
   // console.log(url);

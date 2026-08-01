@@ -1,43 +1,12 @@
-import { Box, Typography, useTheme, Button } from "@mui/material";
+import React, { useEffect, useState } from "react";
+import { Box, useTheme, Button } from "@mui/material";
 import { DataGrid, GridToolbar } from "@mui/x-data-grid";
-import { tokens } from "../../theme";
-import Icon from "@mui/material/Icon";
-import { mockDataTeam } from "../../data/mockData";
-import AdminPanelSettingsOutlinedIcon from "@mui/icons-material/AdminPanelSettingsOutlined";
-import LockOpenOutlinedIcon from "@mui/icons-material/LockOpenOutlined";
-import SecurityOutlinedIcon from "@mui/icons-material/SecurityOutlined";
-import DeleteIcon from "@mui/icons-material/Delete";
 import Header from "../../components/Headers";
-// import { abc } from "../../mockData";
-import { useEffect, useState, useCallback } from "react";
-import { useNavigate } from "react-router-dom";
-import axios from "axios";
-// import { useAuthContext } from "../../hooks/useAuthContext.jsx";
-import AddCircleOutlineIcon from "@mui/icons-material/AddCircleOutline";
-import { CleaningServices } from "@mui/icons-material";
-import React from "react";
-// import NewsCard from "../Cards/NewsCard";
-import Grid from "@mui/material/Grid";
-import Paper from "@mui/material/Paper";
-import List from "@mui/material/List";
-import ListItem from "@mui/material/ListItem";
-import ListItemText from "@mui/material/ListItemText";
-import Divider from "@mui/material/Divider";
 
 const Portfolio = () => {
-  // const { user } = useAuthContext();
   const user = JSON.parse(localStorage.getItem("user") || "{}");
   const userId = user?.id || user?._id || "";
-  console.log(user);
-  const history = useNavigate();
-  //   const [abc, setAbc] = useState([]);
   const [rows, setRows] = useState([]);
-  const [invAmt, setInvAmt] = useState(0);
-  const [currAmt, setCurrAmt] = useState(0);
-  const [tProfit, setTProfit] = useState(0);
-
-  // const [rows: GridRowsProp, setRows] = React.useState([]);
-  const [isLoading, setIsLoading] = useState(true);
 
   const url = userId ? "http://localhost:8080/trade/".concat(userId) : "";
   // console.log(url);
