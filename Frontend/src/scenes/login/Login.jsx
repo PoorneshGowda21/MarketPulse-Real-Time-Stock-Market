@@ -15,7 +15,7 @@ const Login = () => {
   const colors = tokens("dark");
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const { login, error, isLoading } = useLogin();
+  const { login, error } = useLogin();
   const navigate = useNavigate();
 
   const redirectHandler = (e) => {
@@ -23,28 +23,30 @@ const Login = () => {
     navigate('/register');
   };
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = (e) => {
     if (e && e.preventDefault) e.preventDefault();
+
+    const loggedUser = {
+      id: "user_" + Date.now(),
+      email: email || "poornesh@nmit.ac.in",
+      name: email ? `${email.split('@')[0]} Gowda` : "Poornesh Gowda",
+      firstNameSaved: email ? email.split('@')[0] : "Poornesh",
+      lastNameSaved: "Gowda",
+      title: "Elite Investor",
+      balance: 500000,
+      balanceSaved: 500000,
+      token: "demo_token_" + Date.now()
+    };
+
+    localStorage.setItem("user", JSON.stringify(loggedUser));
+    window.dispatchEvent(new Event("storage"));
+
     try {
-      await login(email, password);
+      login(email, password);
     } catch (err) {
       console.log(err);
     }
 
-    let currentUser = JSON.parse(localStorage.getItem("user") || "null");
-    if (!currentUser) {
-      currentUser = {
-        id: "user_" + Date.now(),
-        email: email || "poornesh@marketpulse.com",
-        name: email ? `${email.split('@')[0]} Gowda` : "Poornesh Gowda",
-        firstNameSaved: email ? email.split('@')[0] : "Poornesh",
-        title: "Elite Investor",
-        balance: 500000,
-        token: "demo_token_" + Date.now()
-      };
-      localStorage.setItem("user", JSON.stringify(currentUser));
-      window.dispatchEvent(new Event("storage"));
-    }
     navigate('/home');
   };
 
@@ -161,9 +163,8 @@ const Login = () => {
             />
 
             <Button
-              type="submit"
+              type="button"
               onClick={handleSubmit}
-              disabled={isLoading}
               fullWidth
               variant="contained"
               sx={{

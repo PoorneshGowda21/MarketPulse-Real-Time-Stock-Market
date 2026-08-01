@@ -17,7 +17,7 @@ const Register = () => {
   const [lastName, setLastName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const { signup, error, isLoading } = useSignup();
+  const { signup, error } = useSignup();
   const navigate = useNavigate();
 
   const redirectHandler = (e) => {
@@ -25,28 +25,30 @@ const Register = () => {
     navigate('/login');
   };
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = (e) => {
     if (e && e.preventDefault) e.preventDefault();
+
+    const newUser = {
+      id: "user_" + Date.now(),
+      email: email || "poornesh@nmit.ac.in",
+      name: `${firstName || "Poornesh"} ${lastName || "Gowda"}`.trim(),
+      firstNameSaved: firstName || "Poornesh",
+      lastNameSaved: lastName || "Gowda",
+      title: "Elite Investor",
+      balance: 500000,
+      balanceSaved: 500000,
+      token: "demo_token_" + Date.now()
+    };
+
+    localStorage.setItem("user", JSON.stringify(newUser));
+    window.dispatchEvent(new Event("storage"));
+
     try {
-      await signup(firstName, lastName, email, password);
+      signup(firstName, lastName, email, password);
     } catch (err) {
       console.log(err);
     }
 
-    let currentUser = JSON.parse(localStorage.getItem("user") || "null");
-    if (!currentUser) {
-      currentUser = {
-        id: "user_" + Date.now(),
-        email: email || "user@marketpulse.com",
-        name: `${firstName || "Investor"} ${lastName || "User"}`.trim(),
-        firstNameSaved: firstName || "Investor",
-        title: "Elite Trader",
-        balance: 500000,
-        token: "demo_token_" + Date.now()
-      };
-      localStorage.setItem("user", JSON.stringify(currentUser));
-      window.dispatchEvent(new Event("storage"));
-    }
     navigate('/home');
   };
 
@@ -212,9 +214,8 @@ const Register = () => {
             />
 
             <Button
-              type="submit"
+              type="button"
               onClick={handleSubmit}
-              disabled={isLoading}
               fullWidth
               variant="contained"
               sx={{
