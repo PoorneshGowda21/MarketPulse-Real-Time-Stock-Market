@@ -22,12 +22,12 @@ const PriceAlerts = () => {
   const theme = useTheme();
   const isDark = theme.palette.mode === "dark";
 
-  const [alerts, setAlerts] = useState([
-    { id: 1, symbol: "AAPL", company: "Apple Inc.", targetPrice: 225.00, condition: "Above", currentPrice: 224.20, status: "Active" },
-    { id: 2, symbol: "TSLA", company: "Tesla Inc.", targetPrice: 200.00, condition: "Below", currentPrice: 218.50, status: "Active" },
-    { id: 3, symbol: "NVDA", company: "NVIDIA Corp.", targetPrice: 120.00, condition: "Above", currentPrice: 124.50, status: "Triggered" },
-    { id: 4, symbol: "RELIANCE", company: "Reliance Industries", targetPrice: 3000.00, condition: "Above", currentPrice: 2950.00, status: "Active" },
-  ]);
+  // Load persisted alerts from localStorage, default to empty
+  const [alerts, setAlerts] = useState(() => {
+    try {
+      return JSON.parse(localStorage.getItem("price_alerts") || "[]");
+    } catch { return []; }
+  });
 
   const [form, setForm] = useState({
     symbol: "AAPL",
@@ -44,21 +44,25 @@ const PriceAlerts = () => {
 
     const newAlert = {
       id: Date.now(),
-      symbol: form.symbol,
-      company: form.symbol === "AAPL" ? "Apple Inc." : form.symbol === "TSLA" ? "Tesla Inc." : "Selected Asset",
+      symbol: form.symbol.toUpperCase(),
+      company: form.symbol === "AAPL" ? "Apple Inc." : form.symbol === "TSLA" ? "Tesla Inc." : form.symbol === "NVDA" ? "NVIDIA Corp." : form.symbol === "RELIANCE" ? "Reliance Industries" : form.symbol === "TCS" ? "Tata Consultancy" : form.symbol.toUpperCase(),
       targetPrice: parseFloat(form.targetPrice),
       condition: form.condition,
-      currentPrice: form.symbol === "AAPL" ? 224.20 : 218.50,
+      currentPrice: 0,
       status: "Active",
     };
 
-    setAlerts([newAlert, ...alerts]);
+    const updated = [newAlert, ...alerts];
+    setAlerts(updated);
+    localStorage.setItem("price_alerts", JSON.stringify(updated));
     setForm({ symbol: "AAPL", targetPrice: "", condition: "Above", notificationType: "Email & Browser" });
-    setSnackbar({ open: true, message: `🎉 Target price alert set for ${newAlert.symbol}!`, severity: "success" });
+    setSnackbar({ open: true, message: `🎉 Price alert set for ${newAlert.symbol} — ${newAlert.condition} $${newAlert.targetPrice.toFixed(2)}!`, severity: "success" });
   };
 
   const handleDeleteAlert = (id) => {
-    setAlerts(alerts.filter((alert) => alert.id !== id));
+    const updated = alerts.filter((alert) => alert.id !== id);
+    setAlerts(updated);
+    localStorage.setItem("price_alerts", JSON.stringify(updated));
     setSnackbar({ open: true, message: "Alert removed successfully", severity: "info" });
   };
 
@@ -201,6 +205,19 @@ const PriceAlerts = () => {
             </Typography>
           </Box>
 
+          {alerts.length === 0 ? (
+            <Box
+              sx={{
+                textAlign: "center",
+                py: 6,
+                color: isDark ? "#a3a3a3" : "#64748b",
+              }}
+            >
+              <NotificationsActiveIcon sx={{ fontSize: 52, opacity: 0.3, mb: 1.5 }} />
+              <Typography variant="h6" sx={{ fontWeight: "bold", mb: 0.5 }}>No active alerts</Typography>
+              <Typography variant="body2">Create a price trigger above to get notified when a stock hits your target.</Typography>
+            </Box>
+          ) : (
           <Grid container spacing={2}>
             {alerts.map((alert) => (
               <Grid item xs={12} key={alert.id}>
@@ -241,6 +258,7 @@ const PriceAlerts = () => {
               </Grid>
             ))}
           </Grid>
+          )}
         </CardContent>
       </Card>
 

@@ -14,70 +14,36 @@ const Login = () => {
   const colors = tokens("dark");
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [loginError, setLoginError] = useState('');
-  const { login, isLoading } = useLogin();
+  const [localError, setLocalError] = useState('');
+  const [loading, setLoading] = useState(false);
+  const { login } = useLogin();
   const navigate = useNavigate();
 
-  const redirectHandler = (e) => {
+  const redirectToSignup = (e) => {
     if (e && e.preventDefault) e.preventDefault();
     navigate('/register');
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     if (e && e.preventDefault) e.preventDefault();
-    setLoginError('');
+    setLocalError('');
 
-    if (!email || !password) {
-      setLoginError('Please enter both email and password.');
+    if (!email.trim() || !password) {
+      setLocalError('Please enter both email and password.');
       return;
     }
 
-    const cleanEmail = email.toLowerCase().trim();
-    const registry = JSON.parse(localStorage.getItem("registered_users") || "[]");
+    setLoading(true);
+    const result = await login(email.trim(), password);
+    setLoading(false);
 
-    // Check if demo user or registered user exists
-    const isDemoEmail = (
-      cleanEmail === "1nt23is155.poornesh@nmit.ac.in" ||
-      cleanEmail === "poornesh@nmit.ac.in" ||
-      cleanEmail === "poornesh@marketpulse.com" ||
-      cleanEmail === "admin@marketpulse.com"
-    );
-
-    const foundUser = registry.find(u => u.email === cleanEmail);
-
-    if (!foundUser && !isDemoEmail) {
-      setLoginError('Account does not exist! Please Sign Up first.');
-      return;
+    if (result && result.success) {
+      navigate('/home');
+    } else {
+      const msg = (result && result.error) || 'Login failed. Please check your credentials.';
+      setLocalError(msg);
+      // Do NOT navigate — stay on login page
     }
-
-    if (foundUser && foundUser.password !== password) {
-      setLoginError('Incorrect password! Please check your credentials.');
-      return;
-    }
-
-    // Login successful - create user session
-    const loggedUser = {
-      id: foundUser?.id || "user_" + Date.now(),
-      email: cleanEmail,
-      name: foundUser?.name || (cleanEmail ? `${cleanEmail.split('@')[0]} Gowda` : "Poornesh Gowda"),
-      firstNameSaved: foundUser?.firstName || (cleanEmail ? cleanEmail.split('@')[0] : "Poornesh"),
-      lastNameSaved: foundUser?.lastName || "Gowda",
-      title: "Elite Investor",
-      balance: foundUser?.balance || 500000,
-      balanceSaved: foundUser?.balance || 500000,
-      token: "demo_token_" + Date.now()
-    };
-
-    localStorage.setItem("user", JSON.stringify(loggedUser));
-    window.dispatchEvent(new Event("storage"));
-
-    try {
-      login(email, password);
-    } catch (err) {
-      console.log(err);
-    }
-
-    navigate('/home');
   };
 
   return (
@@ -91,7 +57,7 @@ const Login = () => {
         boxShadow="0 4px 20px rgba(0,0,0,0.2)"
       >
         <Typography fontWeight="bold" fontSize={{ xs: "22px", sm: "32px" }} color="primary">
-          Stock Portfolio Manager
+          MarketPulse — Stock Portfolio Manager
         </Typography>
       </Box>
 
@@ -107,7 +73,7 @@ const Login = () => {
           flexWrap: "wrap",
         }}
       >
-        {/* Left Side Trading Illustration Image (Hidden on Mobile) */}
+        {/* Left Side Trading Image — hidden on mobile */}
         <Box
           sx={{
             display: { xs: "none", md: "block" },
@@ -115,6 +81,7 @@ const Login = () => {
             borderRadius: "20px",
             overflow: "hidden",
             boxShadow: "0 10px 32px rgba(0,0,0,0.35)",
+            flexShrink: 0,
           }}
         >
           <img
@@ -123,14 +90,11 @@ const Login = () => {
             height="450"
             alt="trading illustration"
             loading="lazy"
-            style={{
-              objectFit: "cover",
-              display: "block",
-            }}
+            style={{ objectFit: "cover", display: "block" }}
           />
         </Box>
 
-        {/* Right Side Responsive Log In Box */}
+        {/* Login Card */}
         <Box
           sx={{
             width: { xs: "100%", sm: "420px" },
@@ -144,7 +108,7 @@ const Login = () => {
           }}
         >
           <Box sx={{ display: "flex", alignItems: "center", gap: 1.5, mb: 3 }}>
-            <Avatar sx={{ bgcolor: "#4cceac", width: 44, height: 44, boxShadow: "0 0 10px rgba(76, 206, 172, 0.4)" }}>
+            <Avatar sx={{ bgcolor: "#4cceac", width: 44, height: 44 }}>
               <LockOutlinedIcon sx={{ color: "#141b2d" }} />
             </Avatar>
             <Typography variant="h4" sx={{ color: "#ffffff", fontWeight: "bold" }}>
@@ -157,11 +121,11 @@ const Login = () => {
               margin="dense"
               required
               fullWidth
-              id="email"
+              id="login-email"
               label="Email Address"
               name="email"
               value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              onChange={(e) => { setEmail(e.target.value); setLocalError(''); }}
               autoComplete="email"
               autoFocus
               sx={{
@@ -186,8 +150,8 @@ const Login = () => {
               label="Password"
               type="password"
               value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              id="password"
+              onChange={(e) => { setPassword(e.target.value); setLocalError(''); }}
+              id="login-password"
               autoComplete="current-password"
               sx={{
                 mb: 3,
@@ -203,9 +167,26 @@ const Login = () => {
               }}
             />
 
+            {localError && (
+              <Box sx={{ mb: 2 }}>
+                <Alert
+                  severity="error"
+                  action={
+                    localError.includes('sign up') || localError.includes('not found') ? (
+                      <Button color="inherit" size="small" onClick={redirectToSignup}>
+                        Sign Up
+                      </Button>
+                    ) : null
+                  }
+                >
+                  {localError}
+                </Alert>
+              </Box>
+            )}
+
             <Button
               type="submit"
-              disabled={isLoading}
+              disabled={loading}
               fullWidth
               variant="contained"
               sx={{
@@ -216,24 +197,17 @@ const Login = () => {
                 fontWeight: "bold",
                 fontSize: "15px",
                 borderRadius: "8px",
-                "&:hover": {
-                  backgroundColor: "#3da58a",
-                },
+                "&:hover": { backgroundColor: "#3da58a" },
+                "&:disabled": { backgroundColor: "#2a6b5a", color: "#7a9e9a" },
               }}
             >
-              LOG IN
+              {loading ? "Logging In..." : "LOG IN"}
             </Button>
-
-            {loginError && (
-              <Box sx={{ mb: 2 }}>
-                <Alert severity="error">{loginError}</Alert>
-              </Box>
-            )}
 
             <Box textAlign="center" mt={1}>
               <a
                 href="/register"
-                onClick={redirectHandler}
+                onClick={redirectToSignup}
                 style={{ color: "#4cceac", fontWeight: 600, textDecoration: "none", fontSize: "14px" }}
               >
                 Don't have an account? Sign Up

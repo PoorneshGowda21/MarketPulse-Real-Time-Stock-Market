@@ -10,6 +10,25 @@ export const useSignup = () => {
         setIsLoading(true);
         setError(null);
 
+        const cleanEmail = email.toLowerCase().trim();
+
+        // Always register into localStorage registry first (works offline + online)
+        const registry = JSON.parse(localStorage.getItem("registered_users") || "[]");
+        const exists = registry.find(u => u.email === cleanEmail);
+        if (!exists) {
+            const newEntry = {
+                id: "user_" + Date.now(),
+                email: cleanEmail,
+                password: password,
+                firstName: firstName,
+                lastName: lastName,
+                name: `${firstName} ${lastName}`.trim(),
+                balance: 500000
+            };
+            registry.push(newEntry);
+            localStorage.setItem("registered_users", JSON.stringify(registry));
+        }
+
         const API_BASE = process.env.REACT_APP_API_URL || (window.location.origin.includes('localhost') ? 'http://localhost:8080' : '');
         const url = `${API_BASE}/user/signup/`;
 
@@ -26,38 +45,41 @@ export const useSignup = () => {
                 window.dispatchEvent(new Event("storage"));
                 dispatch({ type: 'LOGIN', payload: json });
                 setIsLoading(false);
-                return true;
+                return { success: true, user: json };
             } else {
                 const json = await response.json().catch(() => ({}));
                 if (json.error) {
                     setIsLoading(false);
                     setError(json.error);
-                    return false;
+                    return { success: false, error: json.error };
                 }
             }
         } catch (err) {
-            console.log("Backend offline or mixed-content blocked, initializing local session:", err);
+            console.log("Backend offline, using local registry for signup:", err);
         }
 
-        // Fallback user session for client-side demo / static deployment
-        const fallbackUser = {
-            id: Date.now().toString(),
-            _id: Date.now().toString(),
-            email: email || "user@marketpulse.com",
-            firstNameSaved: firstName || "Investor",
-            lastNameSaved: lastName || "User",
-            name: `${firstName || "Investor"} ${lastName || "User"}`.trim(),
-            title: "Elite Trader",
+        // Backend offline — use the locally registered entry
+        const registeredEntry = JSON.parse(localStorage.getItem("registered_users") || "[]")
+            .find(u => u.email === cleanEmail);
+
+        const localUser = {
+            id: registeredEntry?.id || "user_" + Date.now(),
+            _id: registeredEntry?.id || "user_" + Date.now(),
+            email: cleanEmail,
+            firstNameSaved: firstName,
+            lastNameSaved: lastName,
+            name: `${firstName} ${lastName}`.trim(),
+            title: "Elite Investor",
             balance: 500000,
             balanceSaved: 500000,
-            token: "demo_jwt_token_" + Date.now()
+            token: "local_token_" + Date.now()
         };
 
-        localStorage.setItem('user', JSON.stringify(fallbackUser));
+        localStorage.setItem('user', JSON.stringify(localUser));
         window.dispatchEvent(new Event("storage"));
-        dispatch({ type: 'LOGIN', payload: fallbackUser });
+        dispatch({ type: 'LOGIN', payload: localUser });
         setIsLoading(false);
-        return true;
+        return { success: true, user: localUser };
     };
 
     return ({ signup, error, isLoading });

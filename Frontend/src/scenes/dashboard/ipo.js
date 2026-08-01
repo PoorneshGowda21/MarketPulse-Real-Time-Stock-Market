@@ -30,65 +30,36 @@ const Watchlist = () => {
   // console.log(url);
 
   const fetchData = async () => {
-    let abc = [];
     const temp = [];
-    let idz = 1;
-
-    let newData = [];
     const url =
       "https://finnhub.io/api/v1/calendar/ipo?from=2022-01-01&to=2022-12-31&token=ce80b8aad3i4pjr4v2ggce80b8aad3i4pjr4v2h0";
-    await axios
-      .get(url)
-      .then((res) => {
-        const pData = res.data["ipoCalendar"];
-        // console.log(pData);
-
-        // .then((response) => {
-        pData.map((d) => newData.push(d));
-        //     newData.push(pData);
-      })
-      .catch((err) => {
-        console.log(err);
-      });
-    // console.log(newData);
-    for (let i = 0; i < 50; i++) {
-      const ab = {
-        id: i,
-        date: newData[i]["date"],
-        exchange: newData[i]["exchange"],
-        name: newData[i]["name"],
-        numberOfShares: newData[i]["numberOfShares"],
-        price: newData[i]["price"],
-        status: newData[i]["status"],
-        symbol: newData[i]["symbol"],
-        totalSharesValue: newData[i]["totalSharesValue"],
-      };
-      // console.log(pData[key].name)
-
-      temp.push(ab);
+    try {
+      const res = await axios.get(url);
+      const pData = res.data?.ipoCalendar;
+      if (!Array.isArray(pData) || pData.length === 0) {
+        setRows([]);
+        return;
+      }
+      const limit = Math.min(50, pData.length);
+      for (let i = 0; i < limit; i++) {
+        temp.push({
+          id: i,
+          date: pData[i]?.date || "",
+          exchange: pData[i]?.exchange || "",
+          name: pData[i]?.name || "",
+          numberOfShares: pData[i]?.numberOfShares || 0,
+          price: pData[i]?.price || 0,
+          status: pData[i]?.status || "",
+          symbol: pData[i]?.symbol || "",
+          totalSharesValue: pData[i]?.totalSharesValue || 0,
+        });
+      }
+    } catch (err) {
+      console.log("IPO calendar fetch failed:", err);
     }
-    // const ab = {
-    //   id: idz,
-    //   date: newData[0]["date"],
-    //   exchange: newData[0]["exchange"],
-    //   name: newData[0]["name"],
-    //   numberOfShares: newData[0]["numberOfShares"],
-    //   price: newData[0]["price"],
-    //   status: newData[0]["status"],
-    //   symbol: newData[0]["symbol"],
-    //   totalSharesValue: newData[0]["totalSharesValue"],
-    // };
-    // // console.log(pData[key].name)
-
-    // temp.push(ab);
-
-    // idz++;
-    console.log(temp);
-
-    // console.log(s);
     setRows(temp);
-    // setIsLoading(false);
   };
+
 
   useEffect(() => {
     fetchData();

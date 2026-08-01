@@ -39,79 +39,62 @@ const Portfolio = () => {
   // const [rows: GridRowsProp, setRows] = React.useState([]);
   const [isLoading, setIsLoading] = useState(true);
 
-  const url = userId ? "http://localhost:8080/portfolio/".concat(userId) : "";
+  const API_BASE = process.env.REACT_APP_API_URL ||
+    (window.location.origin.includes('localhost') ? 'http://localhost:8080' : '');
+  const url = userId ? `${API_BASE}/portfolio/${userId}` : "";
   // console.log(url);
 
   const fetchData = async () => {
+    if (!url) return;
     let abc = [];
     const temp = [];
     let totalAmount = 0;
     let totalProfit = 0;
     let totalCurrAmount = 0;
 
-    await fetch(url)
-      .then((response) => response.json())
-      // .then((response) => setAbc(response));
-      .then((response) => {
-        response.map((d) => abc.push(d));
-      });
-    console.log(abc);
+    try {
+      const resp = await fetch(url);
+      if (!resp.ok) return;
+      const response = await resp.json();
+      if (!Array.isArray(response) || response.length === 0) return;
+      response.forEach((d) => abc.push(d));
+    } catch (err) {
+      console.log("Portfolio fetch error:", err);
+      return;
+    }
+
     for (var key in abc) {
       if (!abc.hasOwnProperty(key)) continue;
-      let newData = [];
-      const url = "https://finnhub.io/api/v1/quote?symbol=".concat(
-        abc[key].symbol,
-        "&token=c94i99aad3if4j50rvn0"
-      );
-      await axios
-        .get(url)
-        .then((res) => {
-          const pData = res.data;
-          newData.push(pData);
-        })
-        .catch((err) => {
-          console.log(err);
-        });
-      console.log(newData);
+      let quoteData = { c: 0, dp: 0, o: 0, h: 0, l: 0, pc: 0 };
+      try {
+        const qUrl = `https://finnhub.io/api/v1/quote?symbol=${abc[key].symbol}&token=ce80b8aad3i4pjr4v2ggce80b8aad3i4pjr4v2h0`;
+        const res = await axios.get(qUrl);
+        if (res.data && res.data.c) quoteData = res.data;
+      } catch (err) {
+        console.log("Quote fetch failed for", abc[key].symbol, err);
+      }
 
       const ab = {
         id: abc[key]._id,
         name: abc[key].name,
         symbol: abc[key].symbol,
-        today: newData[0]["c"],
+        today: quoteData.c,
         buyPrice: abc[key].price,
         shares: abc[key].shares,
-        currAmount: abc[key].shares*newData[0]["c"],
-        invAmount: abc[key].shares*abc[key].price,
-        profit: abc[key].shares*newData[0]["c"] - abc[key].shares*abc[key].price
-        // id: abc[key]._id,
-        // name: abc[key].name,
-        // symbol: abc[key].symbol,
-        // delete: abc[key]._id,
-        // ids: abc[key]._id,
-        // today: newData[0]["c"],
-        // Percent: newData[0]["dp"] + " %",
-        // open: newData[0]["o"],
-        // high: newData[0]["h"],
-        // low: newData[0]["l"],
-        // close: newData[0]["pc"],
+        currAmount: abc[key].shares * quoteData.c,
+        invAmount: abc[key].shares * abc[key].price,
+        profit: abc[key].shares * quoteData.c - abc[key].shares * abc[key].price,
       };
 
-      totalAmount+=ab.invAmount;
-      totalProfit+=ab.profit;
-      totalCurrAmount += ab.currAmount
-      // console.log(pData[key].name)
+      totalAmount += ab.invAmount;
+      totalProfit += ab.profit;
+      totalCurrAmount += ab.currAmount;
       temp.push(ab);
-
     }
-    setInvAmt(totalAmount)
+    setInvAmt(totalAmount);
     setTProfit(totalProfit);
-    setCurrAmt(totalCurrAmount)
-    console.log(temp);
-    const s = new Set(temp);
-    console.log(s);
-    setRows(Array.from(s));
-    // setIsLoading(false);
+    setCurrAmt(totalCurrAmount);
+    setRows(Array.from(new Set(temp)));
   };
 
   useEffect(() => {

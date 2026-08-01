@@ -27,16 +27,16 @@ const Profile = () => {
   const savedUser = JSON.parse(localStorage.getItem("user") || "{}");
 
   const [formData, setFormData] = useState({
-    name: savedUser.name || savedUser.firstName || savedUser.username || "Poornesh",
-    email: savedUser.email || "poornesh@stocks.com",
-    phone: savedUser.phone || "+91 98765 43210",
-    pan: savedUser.pan || "ABCDE1234F",
-    aadhaar: savedUser.aadhaar || "1234 5678 9012",
-    accountNumber: savedUser.accountNumber || "9876543210987",
-    bankName: savedUser.bankName || "HDFC Bank",
-    ifsc: savedUser.ifsc || "HDFC0001234",
+    name: savedUser.name || savedUser.firstName || savedUser.username || "",
+    email: savedUser.email || "",
+    phone: savedUser.phone || "",
+    pan: savedUser.pan || "",
+    aadhaar: savedUser.aadhaar || "",
+    accountNumber: savedUser.accountNumber || "",
+    bankName: savedUser.bankName || "",
+    ifsc: savedUser.ifsc || "",
     title: savedUser.title || "Elite Investor",
-    address: savedUser.address || "Bengaluru, Karnataka, India",
+    address: savedUser.address || "",
   });
 
   const [openSnackbar, setOpenSnackbar] = useState(false);

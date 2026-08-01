@@ -26,38 +26,58 @@ export const useLogin = () => {
                 window.dispatchEvent(new Event("storage"));
                 dispatch({ type: 'LOGIN', payload: json });
                 setIsLoading(false);
-                return true;
+                return { success: true, user: json };
             } else {
                 const json = await response.json().catch(() => ({}));
-                if (json.error) {
-                    setIsLoading(false);
-                    setError(json.error);
-                    return false;
-                }
+                const msg = json.error || 'Invalid email or password.';
+                setIsLoading(false);
+                setError(msg);
+                return { success: false, error: msg };
             }
         } catch (err) {
-            console.log("Backend offline or mixed-content blocked, initializing local session:", err);
+            // Backend is offline — fall back to localStorage registry validation
+            console.log("Backend offline, using local registry:", err);
         }
 
-        // Fallback user session for client-side demo / static deployment
-        const fallbackUser = {
-            id: Date.now().toString(),
-            _id: Date.now().toString(),
-            email: email || "poornesh@marketpulse.com",
-            firstNameSaved: email ? email.split('@')[0] : "Poornesh",
-            lastNameSaved: "Gowda",
-            name: email ? `${email.split('@')[0]} Gowda` : "Poornesh Gowda",
+        // === LOCAL REGISTRY FALLBACK ===
+        // When the backend is unreachable, validate against locally registered accounts.
+        const cleanEmail = email.toLowerCase().trim();
+        const registry = JSON.parse(localStorage.getItem("registered_users") || "[]");
+        const foundUser = registry.find(u => u.email === cleanEmail);
+
+        if (!foundUser) {
+            const msg = "Account not found. Please sign up first.";
+            setError(msg);
+            setIsLoading(false);
+            return { success: false, error: msg };
+        }
+
+        if (foundUser.password !== password) {
+            const msg = "Incorrect password. Please try again.";
+            setError(msg);
+            setIsLoading(false);
+            return { success: false, error: msg };
+        }
+
+        // Credentials match — create session
+        const localUser = {
+            id: foundUser.id || "user_" + Date.now(),
+            _id: foundUser.id || "user_" + Date.now(),
+            email: cleanEmail,
+            firstNameSaved: foundUser.firstName,
+            lastNameSaved: foundUser.lastName,
+            name: foundUser.name,
             title: "Elite Investor",
-            balance: 500000,
-            balanceSaved: 500000,
-            token: "demo_jwt_token_" + Date.now()
+            balance: foundUser.balance || 500000,
+            balanceSaved: foundUser.balance || 500000,
+            token: "local_token_" + Date.now()
         };
 
-        localStorage.setItem('user', JSON.stringify(fallbackUser));
+        localStorage.setItem('user', JSON.stringify(localUser));
         window.dispatchEvent(new Event("storage"));
-        dispatch({ type: 'LOGIN', payload: fallbackUser });
+        dispatch({ type: 'LOGIN', payload: localUser });
         setIsLoading(false);
-        return true;
+        return { success: true, user: localUser };
     };
 
     return ({ login, error, isLoading });

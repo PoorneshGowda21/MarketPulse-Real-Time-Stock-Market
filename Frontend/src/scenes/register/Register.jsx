@@ -17,67 +17,33 @@ const Register = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [formError, setFormError] = useState('');
-  const { signup, isLoading } = useSignup();
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const { signup } = useSignup();
   const navigate = useNavigate();
 
-  const redirectHandler = (e) => {
+  const redirectToLogin = (e) => {
     if (e && e.preventDefault) e.preventDefault();
     navigate('/login');
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     if (e && e.preventDefault) e.preventDefault();
     setFormError('');
 
-    if (!email || !password || !firstName) {
+    if (!firstName.trim() || !email.trim() || !password) {
       setFormError('Please fill out all required fields.');
       return;
     }
 
-    const cleanEmail = email.toLowerCase().trim();
+    setIsSubmitting(true);
+    const result = await signup(firstName.trim(), lastName.trim(), email.trim(), password);
+    setIsSubmitting(false);
 
-    // Store in registered users registry
-    let registry = JSON.parse(localStorage.getItem("registered_users") || "[]");
-    const existingIndex = registry.findIndex(u => u.email === cleanEmail);
-    const userAcc = {
-      email: cleanEmail,
-      password: password,
-      firstName: firstName,
-      lastName: lastName,
-      name: `${firstName} ${lastName}`.trim(),
-      balance: 500000
-    };
-
-    if (existingIndex >= 0) {
-      registry[existingIndex] = userAcc;
+    if (result && result.success) {
+      navigate('/home');
     } else {
-      registry.push(userAcc);
+      setFormError((result && result.error) || 'Sign up failed. Please try again.');
     }
-    localStorage.setItem("registered_users", JSON.stringify(registry));
-
-    // Create active user session
-    const activeUser = {
-      id: "user_" + Date.now(),
-      email: cleanEmail,
-      name: `${firstName} ${lastName}`.trim(),
-      firstNameSaved: firstName,
-      lastNameSaved: lastName,
-      title: "Elite Investor",
-      balance: 500000,
-      balanceSaved: 500000,
-      token: "demo_token_" + Date.now()
-    };
-
-    localStorage.setItem("user", JSON.stringify(activeUser));
-    window.dispatchEvent(new Event("storage"));
-
-    try {
-      signup(firstName, lastName, email, password);
-    } catch (err) {
-      console.log(err);
-    }
-
-    navigate('/home');
   };
 
   return (
@@ -91,7 +57,7 @@ const Register = () => {
         boxShadow="0 4px 20px rgba(0,0,0,0.2)"
       >
         <Typography fontWeight="bold" fontSize={{ xs: "22px", sm: "32px" }} color="primary">
-          Stock Portfolio Manager
+          MarketPulse — Stock Portfolio Manager
         </Typography>
       </Box>
 
@@ -107,7 +73,7 @@ const Register = () => {
           flexWrap: "wrap",
         }}
       >
-        {/* Left Side Trading Illustration Image (Hidden on Mobile) */}
+        {/* Left Side Trading Image — hidden on mobile */}
         <Box
           sx={{
             display: { xs: "none", md: "block" },
@@ -115,6 +81,7 @@ const Register = () => {
             borderRadius: "20px",
             overflow: "hidden",
             boxShadow: "0 10px 32px rgba(0,0,0,0.35)",
+            flexShrink: 0,
           }}
         >
           <img
@@ -123,14 +90,11 @@ const Register = () => {
             height="450"
             alt="trading illustration"
             loading="lazy"
-            style={{
-              objectFit: "cover",
-              display: "block",
-            }}
+            style={{ objectFit: "cover", display: "block" }}
           />
         </Box>
 
-        {/* Right Side Responsive Sign Up Box */}
+        {/* Sign Up Card */}
         <Box
           sx={{
             width: { xs: "100%", sm: "420px" },
@@ -144,7 +108,7 @@ const Register = () => {
           }}
         >
           <Box sx={{ display: "flex", alignItems: "center", gap: 1.5, mb: 3 }}>
-            <Avatar sx={{ bgcolor: "#4cceac", width: 44, height: 44, boxShadow: "0 0 10px rgba(76, 206, 172, 0.4)" }}>
+            <Avatar sx={{ bgcolor: "#4cceac", width: 44, height: 44 }}>
               <LockOutlinedIcon sx={{ color: "#141b2d" }} />
             </Avatar>
             <Typography variant="h4" sx={{ color: "#ffffff", fontWeight: "bold" }}>
@@ -157,22 +121,16 @@ const Register = () => {
               margin="dense"
               required
               fullWidth
-              id="firstName"
+              id="signup-firstName"
               label="First Name"
               name="firstName"
               value={firstName}
-              onChange={(e) => setFirstName(e.target.value)}
+              onChange={(e) => { setFirstName(e.target.value); setFormError(''); }}
               autoComplete="given-name"
               autoFocus
               sx={{
                 mb: 2,
-                "& .MuiOutlinedInput-root": {
-                  color: "#ffffff",
-                  backgroundColor: "#141b2d",
-                  "& fieldset": { borderColor: "#3e4396" },
-                  "&:hover fieldset": { borderColor: "#4cceac" },
-                  "&.Mui-focused fieldset": { borderColor: "#4cceac" },
-                },
+                "& .MuiOutlinedInput-root": { color: "#ffffff", backgroundColor: "#141b2d", "& fieldset": { borderColor: "#3e4396" }, "&:hover fieldset": { borderColor: "#4cceac" }, "&.Mui-focused fieldset": { borderColor: "#4cceac" } },
                 "& .MuiInputLabel-root": { color: "#a3a3a3" },
                 "& .MuiInputLabel-root.Mui-focused": { color: "#4cceac" },
               }}
@@ -180,9 +138,8 @@ const Register = () => {
 
             <TextField
               margin="dense"
-              required
               fullWidth
-              id="lastName"
+              id="signup-lastName"
               label="Last Name"
               name="lastName"
               value={lastName}
@@ -190,13 +147,7 @@ const Register = () => {
               autoComplete="family-name"
               sx={{
                 mb: 2,
-                "& .MuiOutlinedInput-root": {
-                  color: "#ffffff",
-                  backgroundColor: "#141b2d",
-                  "& fieldset": { borderColor: "#3e4396" },
-                  "&:hover fieldset": { borderColor: "#4cceac" },
-                  "&.Mui-focused fieldset": { borderColor: "#4cceac" },
-                },
+                "& .MuiOutlinedInput-root": { color: "#ffffff", backgroundColor: "#141b2d", "& fieldset": { borderColor: "#3e4396" }, "&:hover fieldset": { borderColor: "#4cceac" }, "&.Mui-focused fieldset": { borderColor: "#4cceac" } },
                 "& .MuiInputLabel-root": { color: "#a3a3a3" },
                 "& .MuiInputLabel-root.Mui-focused": { color: "#4cceac" },
               }}
@@ -206,21 +157,15 @@ const Register = () => {
               margin="dense"
               required
               fullWidth
-              id="email"
+              id="signup-email"
               label="Email Address"
               name="email"
               value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              onChange={(e) => { setEmail(e.target.value); setFormError(''); }}
               autoComplete="email"
               sx={{
                 mb: 2,
-                "& .MuiOutlinedInput-root": {
-                  color: "#ffffff",
-                  backgroundColor: "#141b2d",
-                  "& fieldset": { borderColor: "#3e4396" },
-                  "&:hover fieldset": { borderColor: "#4cceac" },
-                  "&.Mui-focused fieldset": { borderColor: "#4cceac" },
-                },
+                "& .MuiOutlinedInput-root": { color: "#ffffff", backgroundColor: "#141b2d", "& fieldset": { borderColor: "#3e4396" }, "&:hover fieldset": { borderColor: "#4cceac" }, "&.Mui-focused fieldset": { borderColor: "#4cceac" } },
                 "& .MuiInputLabel-root": { color: "#a3a3a3" },
                 "& .MuiInputLabel-root.Mui-focused": { color: "#4cceac" },
               }}
@@ -233,27 +178,27 @@ const Register = () => {
               name="password"
               label="Password"
               type="password"
-              id="password"
+              id="signup-password"
               value={password}
-              onChange={(e) => setPassword(e.target.value)}
+              onChange={(e) => { setPassword(e.target.value); setFormError(''); }}
               autoComplete="new-password"
               sx={{
                 mb: 3,
-                "& .MuiOutlinedInput-root": {
-                  color: "#ffffff",
-                  backgroundColor: "#141b2d",
-                  "& fieldset": { borderColor: "#3e4396" },
-                  "&:hover fieldset": { borderColor: "#4cceac" },
-                  "&.Mui-focused fieldset": { borderColor: "#4cceac" },
-                },
+                "& .MuiOutlinedInput-root": { color: "#ffffff", backgroundColor: "#141b2d", "& fieldset": { borderColor: "#3e4396" }, "&:hover fieldset": { borderColor: "#4cceac" }, "&.Mui-focused fieldset": { borderColor: "#4cceac" } },
                 "& .MuiInputLabel-root": { color: "#a3a3a3" },
                 "& .MuiInputLabel-root.Mui-focused": { color: "#4cceac" },
               }}
             />
 
+            {formError && (
+              <Box sx={{ mb: 2 }}>
+                <Alert severity="error">{formError}</Alert>
+              </Box>
+            )}
+
             <Button
               type="submit"
-              disabled={isLoading}
+              disabled={isSubmitting}
               fullWidth
               variant="contained"
               sx={{
@@ -264,24 +209,17 @@ const Register = () => {
                 fontWeight: "bold",
                 fontSize: "15px",
                 borderRadius: "8px",
-                "&:hover": {
-                  backgroundColor: "#3da58a",
-                },
+                "&:hover": { backgroundColor: "#3da58a" },
+                "&:disabled": { backgroundColor: "#2a6b5a", color: "#7a9e9a" },
               }}
             >
-              SIGN UP
+              {isSubmitting ? "Creating Account..." : "SIGN UP"}
             </Button>
-
-            {formError && (
-              <Box sx={{ mb: 2 }}>
-                <Alert severity="error">{formError}</Alert>
-              </Box>
-            )}
 
             <Box textAlign="center" mt={1}>
               <a
                 href="/login"
-                onClick={redirectHandler}
+                onClick={redirectToLogin}
                 style={{ color: "#4cceac", fontWeight: 600, textDecoration: "none", fontSize: "14px" }}
               >
                 Already have an account? Log In
