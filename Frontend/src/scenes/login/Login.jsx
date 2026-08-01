@@ -5,17 +5,17 @@ import Button from '@mui/material/Button';
 import TextField from '@mui/material/TextField';
 import LockOutlinedIcon from '@mui/icons-material/LockOutlined';
 import { useNavigate } from "react-router-dom";
-import { Box, Typography, useTheme } from "@mui/material";
+import { Box, Typography, useTheme, Alert } from "@mui/material";
 import '../register/register.scss';
 import { tokens } from "../../theme.js";
-import Alert from '@mui/material/Alert';
 
 const Login = () => {
   const theme = useTheme();
   const colors = tokens("dark");
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const { login, error } = useLogin();
+  const [loginError, setLoginError] = useState('');
+  const { login, isLoading } = useLogin();
   const navigate = useNavigate();
 
   const redirectHandler = (e) => {
@@ -25,16 +25,46 @@ const Login = () => {
 
   const handleSubmit = (e) => {
     if (e && e.preventDefault) e.preventDefault();
+    setLoginError('');
 
+    if (!email || !password) {
+      setLoginError('Please enter both email and password.');
+      return;
+    }
+
+    const cleanEmail = email.toLowerCase().trim();
+    const registry = JSON.parse(localStorage.getItem("registered_users") || "[]");
+
+    // Check if demo user or registered user exists
+    const isDemoEmail = (
+      cleanEmail === "1nt23is155.poornesh@nmit.ac.in" ||
+      cleanEmail === "poornesh@nmit.ac.in" ||
+      cleanEmail === "poornesh@marketpulse.com" ||
+      cleanEmail === "admin@marketpulse.com"
+    );
+
+    const foundUser = registry.find(u => u.email === cleanEmail);
+
+    if (!foundUser && !isDemoEmail) {
+      setLoginError('Account does not exist! Please Sign Up first.');
+      return;
+    }
+
+    if (foundUser && foundUser.password !== password) {
+      setLoginError('Incorrect password! Please check your credentials.');
+      return;
+    }
+
+    // Login successful - create user session
     const loggedUser = {
-      id: "user_" + Date.now(),
-      email: email || "poornesh@nmit.ac.in",
-      name: email ? `${email.split('@')[0]} Gowda` : "Poornesh Gowda",
-      firstNameSaved: email ? email.split('@')[0] : "Poornesh",
-      lastNameSaved: "Gowda",
+      id: foundUser?.id || "user_" + Date.now(),
+      email: cleanEmail,
+      name: foundUser?.name || (cleanEmail ? `${cleanEmail.split('@')[0]} Gowda` : "Poornesh Gowda"),
+      firstNameSaved: foundUser?.firstName || (cleanEmail ? cleanEmail.split('@')[0] : "Poornesh"),
+      lastNameSaved: foundUser?.lastName || "Gowda",
       title: "Elite Investor",
-      balance: 500000,
-      balanceSaved: 500000,
+      balance: foundUser?.balance || 500000,
+      balanceSaved: foundUser?.balance || 500000,
       token: "demo_token_" + Date.now()
     };
 
@@ -56,50 +86,61 @@ const Login = () => {
       <Box
         width="100%"
         backgroundColor={theme.palette.background.alt}
-        p="1.2rem 7%"
+        p={{ xs: "1rem 4%", sm: "1.2rem 7%" }}
         textAlign="center"
         boxShadow="0 4px 20px rgba(0,0,0,0.2)"
       >
-        <Typography fontWeight="bold" fontSize="32px" color="primary">
+        <Typography fontWeight="bold" fontSize={{ xs: "22px", sm: "32px" }} color="primary">
           Stock Portfolio Manager
         </Typography>
       </Box>
 
-      {/* Dead-Center Main Layout Container */}
+      {/* Main Layout Container */}
       <Box
         sx={{
           flexGrow: 1,
           display: "flex",
           justifyContent: "center",
           alignItems: "center",
-          p: 4,
-          gap: 6,
+          p: { xs: 2, sm: 4 },
+          gap: { xs: 0, md: 6 },
           flexWrap: "wrap",
         }}
       >
-        {/* Left Side Trading Illustration Image */}
-        <img
-          src="http://www.jonesday.com/-/media/images/news/2021/07/spoofing_and_disruptive_trading_social.jpg"
-          width="620"
-          height="450"
-          alt="trading illustration"
-          loading="lazy"
-          style={{
-            borderRadius: "20px",
-            boxShadow: "0 10px 32px rgba(0,0,0,0.35)",
-            objectFit: "cover",
-          }}
-        />
-
-        {/* Right Side Centered Log In Box */}
+        {/* Left Side Trading Illustration Image (Hidden on Mobile) */}
         <Box
           sx={{
-            width: "420px",
+            display: { xs: "none", md: "block" },
+            width: { md: "500px", lg: "620px" },
+            borderRadius: "20px",
+            overflow: "hidden",
+            boxShadow: "0 10px 32px rgba(0,0,0,0.35)",
+          }}
+        >
+          <img
+            src="http://www.jonesday.com/-/media/images/news/2021/07/spoofing_and_disruptive_trading_social.jpg"
+            width="100%"
+            height="450"
+            alt="trading illustration"
+            loading="lazy"
+            style={{
+              objectFit: "cover",
+              display: "block",
+            }}
+          />
+        </Box>
+
+        {/* Right Side Responsive Log In Box */}
+        <Box
+          sx={{
+            width: { xs: "100%", sm: "420px" },
+            maxWidth: "420px",
             backgroundColor: "#1F2A40",
-            p: 4,
+            p: { xs: 3, sm: 4 },
             borderRadius: "16px",
             border: "1px solid rgba(76, 206, 172, 0.35)",
             boxShadow: "0 10px 32px rgba(0, 0, 0, 0.5)",
+            mx: "auto"
           }}
         >
           <Box sx={{ display: "flex", alignItems: "center", gap: 1.5, mb: 3 }}>
@@ -163,8 +204,8 @@ const Login = () => {
             />
 
             <Button
-              type="button"
-              onClick={handleSubmit}
+              type="submit"
+              disabled={isLoading}
               fullWidth
               variant="contained"
               sx={{
@@ -183,9 +224,9 @@ const Login = () => {
               LOG IN
             </Button>
 
-            {error && (
+            {loginError && (
               <Box sx={{ mb: 2 }}>
-                <Alert severity="error">{error}</Alert>
+                <Alert severity="error">{loginError}</Alert>
               </Box>
             )}
 

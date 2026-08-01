@@ -5,10 +5,9 @@ import Button from '@mui/material/Button';
 import TextField from '@mui/material/TextField';
 import LockOutlinedIcon from '@mui/icons-material/LockOutlined';
 import { useNavigate } from "react-router-dom";
-import { Box, Typography, useTheme } from "@mui/material";
+import { Box, Typography, useTheme, Alert } from "@mui/material";
 import './register.scss';
 import { tokens } from "../../theme.js";
-import Alert from '@mui/material/Alert';
 
 const Register = () => {
   const theme = useTheme();
@@ -17,7 +16,8 @@ const Register = () => {
   const [lastName, setLastName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const { signup, error } = useSignup();
+  const [formError, setFormError] = useState('');
+  const { signup, isLoading } = useSignup();
   const navigate = useNavigate();
 
   const redirectHandler = (e) => {
@@ -27,20 +27,48 @@ const Register = () => {
 
   const handleSubmit = (e) => {
     if (e && e.preventDefault) e.preventDefault();
+    setFormError('');
 
-    const newUser = {
+    if (!email || !password || !firstName) {
+      setFormError('Please fill out all required fields.');
+      return;
+    }
+
+    const cleanEmail = email.toLowerCase().trim();
+
+    // Store in registered users registry
+    let registry = JSON.parse(localStorage.getItem("registered_users") || "[]");
+    const existingIndex = registry.findIndex(u => u.email === cleanEmail);
+    const userAcc = {
+      email: cleanEmail,
+      password: password,
+      firstName: firstName,
+      lastName: lastName,
+      name: `${firstName} ${lastName}`.trim(),
+      balance: 500000
+    };
+
+    if (existingIndex >= 0) {
+      registry[existingIndex] = userAcc;
+    } else {
+      registry.push(userAcc);
+    }
+    localStorage.setItem("registered_users", JSON.stringify(registry));
+
+    // Create active user session
+    const activeUser = {
       id: "user_" + Date.now(),
-      email: email || "poornesh@nmit.ac.in",
-      name: `${firstName || "Poornesh"} ${lastName || "Gowda"}`.trim(),
-      firstNameSaved: firstName || "Poornesh",
-      lastNameSaved: lastName || "Gowda",
+      email: cleanEmail,
+      name: `${firstName} ${lastName}`.trim(),
+      firstNameSaved: firstName,
+      lastNameSaved: lastName,
       title: "Elite Investor",
       balance: 500000,
       balanceSaved: 500000,
       token: "demo_token_" + Date.now()
     };
 
-    localStorage.setItem("user", JSON.stringify(newUser));
+    localStorage.setItem("user", JSON.stringify(activeUser));
     window.dispatchEvent(new Event("storage"));
 
     try {
@@ -58,53 +86,63 @@ const Register = () => {
       <Box
         width="100%"
         backgroundColor={theme.palette.background.alt}
-        p="1.2rem 7%"
+        p={{ xs: "1rem 4%", sm: "1.2rem 7%" }}
         textAlign="center"
         boxShadow="0 4px 20px rgba(0,0,0,0.2)"
       >
-        <Typography fontWeight="bold" fontSize="32px" color="primary">
+        <Typography fontWeight="bold" fontSize={{ xs: "22px", sm: "32px" }} color="primary">
           Stock Portfolio Manager
         </Typography>
       </Box>
 
-      {/* Dead-Center Main Layout Container */}
+      {/* Main Layout Container */}
       <Box
         sx={{
           flexGrow: 1,
           display: "flex",
           justifyContent: "center",
           alignItems: "center",
-          p: 4,
-          gap: 6,
+          p: { xs: 2, sm: 4 },
+          gap: { xs: 0, md: 6 },
           flexWrap: "wrap",
         }}
       >
-        {/* Left Side Trading Illustration Image */}
-        <img
-          src="http://www.jonesday.com/-/media/images/news/2021/07/spoofing_and_disruptive_trading_social.jpg"
-          width="620"
-          height="450"
-          alt="trading illustration"
-          loading="lazy"
-          style={{
-            borderRadius: "20px",
-            boxShadow: "0 10px 32px rgba(0,0,0,0.35)",
-            objectFit: "cover",
-          }}
-        />
-
-        {/* Right Side Centered Sign Up Box */}
+        {/* Left Side Trading Illustration Image (Hidden on Mobile) */}
         <Box
           sx={{
-            width: "420px",
+            display: { xs: "none", md: "block" },
+            width: { md: "500px", lg: "620px" },
+            borderRadius: "20px",
+            overflow: "hidden",
+            boxShadow: "0 10px 32px rgba(0,0,0,0.35)",
+          }}
+        >
+          <img
+            src="http://www.jonesday.com/-/media/images/news/2021/07/spoofing_and_disruptive_trading_social.jpg"
+            width="100%"
+            height="450"
+            alt="trading illustration"
+            loading="lazy"
+            style={{
+              objectFit: "cover",
+              display: "block",
+            }}
+          />
+        </Box>
+
+        {/* Right Side Responsive Sign Up Box */}
+        <Box
+          sx={{
+            width: { xs: "100%", sm: "420px" },
+            maxWidth: "420px",
             backgroundColor: "#1F2A40",
-            p: 4,
+            p: { xs: 3, sm: 4 },
             borderRadius: "16px",
             border: "1px solid rgba(76, 206, 172, 0.35)",
             boxShadow: "0 10px 32px rgba(0, 0, 0, 0.5)",
+            mx: "auto"
           }}
         >
-          {/* Clean Signup Header with Proper Spacing */}
           <Box sx={{ display: "flex", alignItems: "center", gap: 1.5, mb: 3 }}>
             <Avatar sx={{ bgcolor: "#4cceac", width: 44, height: 44, boxShadow: "0 0 10px rgba(76, 206, 172, 0.4)" }}>
               <LockOutlinedIcon sx={{ color: "#141b2d" }} />
@@ -214,8 +252,8 @@ const Register = () => {
             />
 
             <Button
-              type="button"
-              onClick={handleSubmit}
+              type="submit"
+              disabled={isLoading}
               fullWidth
               variant="contained"
               sx={{
@@ -234,9 +272,9 @@ const Register = () => {
               SIGN UP
             </Button>
 
-            {error && (
+            {formError && (
               <Box sx={{ mb: 2 }}>
-                <Alert severity="error">{error}</Alert>
+                <Alert severity="error">{formError}</Alert>
               </Box>
             )}
 
